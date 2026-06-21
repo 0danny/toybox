@@ -33,6 +33,11 @@ add_executable(toybox
     ${IMGUI_SOURCES}
 
     src/main.cpp
+    src/par_Tex.cpp
+    src/par_Geom.cpp
+    src/par_NGN.cpp
+    src/file.cpp
+    src/structs.h
 )
 
 target_include_directories(toybox PRIVATE

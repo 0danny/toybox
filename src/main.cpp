@@ -4,6 +4,29 @@
 
 #include <GLFW/glfw3.h>
 
+#include <fstream>
+#include <filesystem>
+#include <print>
+#include <vector>
+#include "structs.h"
+
+std::vector<Texture> returnImages();
+std::filesystem::path OpenFileDialog();
+void readNGN(std::ifstream& file);
+
+static std::vector<Texture> textures;
+
+void openNGN() {
+	if (ImGui::Button("Open NGN")){
+		std::filesystem::path ngnPath = OpenFileDialog();
+		std::ifstream file(ngnPath, std::ios::binary);
+		readNGN(file);
+		textures = returnImages();
+		std::println("returned {} images",textures.size());
+	}
+	return;
+}
+
 int main()
 {
 	if (! glfwInit())
@@ -41,9 +64,13 @@ int main()
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		// Show Demo
-		ImGui::ShowDemoWindow();
+		openNGN(); // select NGN and parse
+
         ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+
+		if(textures.size() > 0){
+			ImGui::Image(textures[0].image, ImVec2(textures[0].x,textures[0].y)); // if textures have been extracted, display the first of them all
+		}		
 
 		// Render
 		ImGui::Render();
