@@ -13,6 +13,7 @@
 std::vector<Texture> returnImages();
 std::filesystem::path OpenFileDialog();
 void readNGN(std::ifstream& file);
+RawReadResult readRAW(const std::filesystem::path& inputFilePath);
 
 static std::vector<Texture> textures;
 
@@ -23,6 +24,23 @@ void openNGN() {
 		readNGN(file);
 		textures = returnImages();
 		std::println("returned {} images",textures.size());
+	}
+	return;
+}
+
+void openRAW() {
+	if (ImGui::Button("Open RAW")){
+	std::filesystem::path rawPath = OpenFileDialog();
+
+	RawReadResult raw = readRAW(rawPath);
+
+	std::vector<CreatureRam>& creatures = raw.creatures;
+	std::vector<RawPacket>& rawPackets = raw.rawPackets;
+
+	std::println("returned {} creatures",creatures.size());
+	//for(int i=0; i< creatures.size(); i++){
+	//	std::println("{}",creatures[i].creatureId);
+	//}
 	}
 	return;
 }
@@ -65,11 +83,16 @@ int main()
 		ImGui::NewFrame();
 
 		openNGN(); // select NGN and parse
+		openRAW();
 
         ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
 		if(textures.size() > 0){
-			ImGui::Image(textures[0].image, ImVec2(textures[0].x,textures[0].y)); // if textures have been extracted, display the first of them all
+			for(int i = 0; i < textures.size(); i++){
+				//std::println("{}",i);
+				ImGui::Image(textures[i].image, ImVec2(textures[i].x,textures[i].y)); // if textures have been extracted, display them all
+			}
+			
 		}		
 
 		// Render

@@ -36,6 +36,7 @@ add_executable(toybox
     src/par_Tex.cpp
     src/par_Geom.cpp
     src/par_NGN.cpp
+    src/par_RAW.cpp
     src/file.cpp
     src/structs.h
 )
