@@ -82,5 +82,7 @@ struct RawReadResult
 {
 	bool success = true;
 	std::vector<RawPacket> rawPackets;
+	std::vector<RawPacket> anmPackets;
+	std::vector<RawPacket> allPackets;
 	std::vector<CreatureRam> creatures;
 };

@@ -477,8 +477,18 @@ static bool readRawFileToMemory(const fs::path& inputFilePath, RawReadResult& re
             }
 		}
 
-		result.rawPackets.push_back(std::move(packet));
-        
+		if (packet.data[0] == 0x01 && packet.data[1] == 0x01)
+		{
+			result.anmPackets.push_back(std::move(packet));
+		}
+		else if (packet.data[0] == 0x02 && packet.data[1] == 0x01 or packet.data[0] == 0x03 && packet.data[1] == 0x01)
+		{
+			result.allPackets.push_back(std::move(packet));
+		}
+		else if (packet.data[0] != 35)
+		{
+			result.rawPackets.push_back(std::move(packet));
+		}
 
 		packetIndex++;
 

@@ -33,11 +33,17 @@ void openRAW() {
 	std::filesystem::path rawPath = OpenFileDialog();
 
 	RawReadResult raw = readRAW(rawPath);
-
-	std::vector<CreatureRam>& creatures = raw.creatures;
+	
 	std::vector<RawPacket>& rawPackets = raw.rawPackets;
-
+	std::vector<CreatureRam>& creatures = raw.creatures;
+	std::vector<RawPacket>& anmPackets = raw.anmPackets;
+	std::vector<RawPacket>& allPackets = raw.allPackets;
+	
+	
+	std::println("\nreturned {} textures",rawPackets.size());
 	std::println("returned {} creatures",creatures.size());
+	std::println("returned {} .anm files",anmPackets.size());
+	std::println("returned {} .all files",allPackets.size());
 	//for(int i=0; i< creatures.size(); i++){
 	//	std::println("{}",creatures[i].creatureId);
 	//}
