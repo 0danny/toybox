@@ -11,6 +11,14 @@ struct Texture {
 	int y;
 };
 
+struct rawTexture
+{
+	GLuint image;
+	uint32_t width = 0;
+	uint32_t height = 0;
+	std::vector<uint8_t> rgba;
+};
+
 struct Vertex {
 	float x, y, z;       // Position
 	float nx, ny, nz;    // Normal
@@ -81,7 +89,7 @@ struct RawPacket
 struct RawReadResult
 {
 	bool success = true;
-	std::vector<RawPacket> rawPackets;
+	std::vector<rawTexture> texPackets;
 	std::vector<RawPacket> anmPackets;
 	std::vector<RawPacket> allPackets;
 	std::vector<CreatureRam> creatures;

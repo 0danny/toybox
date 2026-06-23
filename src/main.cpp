@@ -16,6 +16,7 @@ void readNGN(std::ifstream& file);
 RawReadResult readRAW(const std::filesystem::path& inputFilePath);
 
 static std::vector<Texture> textures;
+std::vector<rawTexture> texPackets;
 
 void openNGN() {
 	if (ImGui::Button("Open NGN")){
@@ -34,13 +35,13 @@ void openRAW() {
 
 	RawReadResult raw = readRAW(rawPath);
 	
-	std::vector<RawPacket>& rawPackets = raw.rawPackets;
+	texPackets = raw.texPackets;
 	std::vector<CreatureRam>& creatures = raw.creatures;
 	std::vector<RawPacket>& anmPackets = raw.anmPackets;
 	std::vector<RawPacket>& allPackets = raw.allPackets;
 	
 	
-	std::println("\nreturned {} textures",rawPackets.size());
+	std::println("\nreturned {} textures",texPackets.size());
 	std::println("returned {} creatures",creatures.size());
 	std::println("returned {} .anm files",anmPackets.size());
 	std::println("returned {} .all files",allPackets.size());
@@ -95,11 +96,17 @@ int main()
 
 		if(textures.size() > 0){
 			for(int i = 0; i < textures.size(); i++){
-				//std::println("{}",i);
+				ImGui::Text("%s, %dx%d", textures[i].name.c_str(), textures[i].x, textures[i].y);
 				ImGui::Image(textures[i].image, ImVec2(textures[i].x,textures[i].y)); // if textures have been extracted, display them all
 			}
-			
-		}		
+		}
+
+		if(texPackets.size() > 0){
+			for(int i = 0; i < texPackets.size(); i++){
+				ImGui::Text("tex%d %dx%d", i, texPackets[i].width, texPackets[i].height);
+				ImGui::Image(texPackets[i].image, ImVec2(texPackets[i].width,texPackets[i].height)); // if textures have been extracted, display them all
+			}
+		}	
 
 		// Render
 		ImGui::Render();

@@ -14,6 +14,7 @@
 #include <print>
 #include <vector>
 #include <structs.h>
+#include <GLFW/glfw3.h>
 
 constexpr int32_t kMaxActors = 64;
 
@@ -38,6 +39,17 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 
 	uint8_t* afterHeader = p_inBuffer + 15;
 	uint32_t bitAccum = 4 * p_inBuffer[14] + 2;
+
+	auto copyLiteral4 = [&]()
+	{
+		p_outBuffer[0] = afterHeader[0];
+		p_outBuffer[1] = afterHeader[1];
+		p_outBuffer[2] = afterHeader[2];
+		p_outBuffer[3] = afterHeader[3];
+
+		p_outBuffer += 4;
+		afterHeader += 4;
+	};
 
 	do
 	{
@@ -148,35 +160,17 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 					distanceHighOrLiteralCount = literalCountBit + 2 * distanceHighOrLiteralCount;
 				}
 
-				*p_outBuffer = *afterHeader;
-				p_outBuffer[1] = afterHeader[1];
-
-				p_outBuffer += 4;
-				afterHeader += 4;
-
-				*(p_outBuffer - 2) = afterHeader[2];
-				*(p_outBuffer - 1) = afterHeader[3];
+				copyLiteral4();
 
 				uint32_t literalBlockCount = distanceHighOrLiteralCount + 1;
+				uint32_t literalBlocksRemaining = literalBlockCount + 1;
 
-				if ( literalBlockCount >= 0 )
+				do
 				{
-					uint32_t literalBlocksRemaining = literalBlockCount + 1;
-
-					do
-					{
-						*p_outBuffer = *afterHeader;
-						p_outBuffer[1] = afterHeader[1];
-						p_outBuffer += 4;
-
-						*(p_outBuffer - 2) = afterHeader[2];
-						*(p_outBuffer - 1) = afterHeader[3];
-
-						afterHeader += 4;
-						--literalBlocksRemaining;
-					}
-					while ( literalBlocksRemaining );
+					copyLiteral4();
+					--literalBlocksRemaining;
 				}
+				while ( literalBlocksRemaining );
 			}
 
 			LOBYTE_RD(bitAccum) = 2 * lengthCode;
@@ -303,13 +297,12 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 
 		LBL_COPY_MATCH:
 
-			int32_t matchDistance = distanceHighOrLiteralCount & 0xFF00 | (*afterHeader++);
+			int32_t matchDistance = (distanceHighOrLiteralCount & 0xFF00) | (*afterHeader++);
 			uint8_t* matchSource = &p_outBuffer[-matchDistance - 1];
 
 			if ( copyLength & 1 )
 			{
-				matchSource = &p_outBuffer[-matchDistance];
-				*p_outBuffer++ = *matchSource;
+				*p_outBuffer++ = *matchSource++;
 			}
 
 			int32_t pairCopyCount = (copyLength >> 1) - 1;
@@ -389,6 +382,246 @@ static uint32_t toBigEndian(uint32_t num)
 	       ((num & 0x0000ff00) << 8) |
 	       ((num & 0x00ff0000) >> 8) |
 	       ((num & 0xff000000) >> 24);
+}
+
+struct GLTexture
+{
+	GLuint id = 0;
+	int width = 0;
+	int height = 0;
+};
+
+static GLuint createGLTex(const rawTexture& image)
+{
+	if (image.rgba.empty() || image.width == 0 || image.height == 0)
+		return 0;
+
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+	glTexImage2D(
+		GL_TEXTURE_2D,
+		0,
+		GL_RGBA8,
+		static_cast<GLsizei>(image.width),
+		static_cast<GLsizei>(image.height),
+		0,
+		GL_RGBA,
+		GL_UNSIGNED_BYTE,
+		image.rgba.data()
+	);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return textureID;
+}
+
+static uint32_t readU32LE(const std::vector<uint8_t>& data, size_t offset)
+{
+	if (offset + 3 >= data.size())
+		return 0;
+
+	return static_cast<uint32_t>(data[offset]) |
+	       (static_cast<uint32_t>(data[offset + 1]) << 8) |
+	       (static_cast<uint32_t>(data[offset + 2]) << 16) |
+	       (static_cast<uint32_t>(data[offset + 3]) << 24);
+}
+
+static uint16_t readU16LE(const std::vector<uint8_t>& data, size_t offset)
+{
+	if (offset + 1 >= data.size())
+		return 0;
+
+	return static_cast<uint16_t>(data[offset]) |
+	       (static_cast<uint16_t>(data[offset + 1]) << 8);
+}
+
+static uint8_t expand5To8(uint8_t value)
+{
+	return static_cast<uint8_t>((value << 3) | (value >> 2));
+}
+
+static rawTexture convertRGB555PacketToImage(const RawPacket& packet)
+{
+	rawTexture image;
+
+	if (packet.data.size() < 16)
+		return image;
+
+	const uint32_t width = readU32LE(packet.data, 4);
+	const uint32_t height = readU32LE(packet.data, 8);
+
+	if (width == 0 || height == 0)
+		return image;
+
+	constexpr size_t headerSize = 16;
+	const size_t pixelCount = static_cast<size_t>(width) * height;
+	const size_t neededSize = headerSize + pixelCount * 2;
+
+	if (packet.data.size() < neededSize)
+		return image;
+
+	const uint8_t* pixels = packet.data.data() + headerSize;
+
+	image.width = width;
+	image.height = height;
+	image.rgba.resize(pixelCount * 4);
+
+	for (size_t i = 0; i < pixelCount; i++)
+	{
+		const uint16_t color =
+		    static_cast<uint16_t>(pixels[i * 2]) |
+		    (static_cast<uint16_t>(pixels[i * 2 + 1]) << 8);
+
+		const uint8_t r5 = color & 0x1F;
+		const uint8_t g5 = (color >> 5) & 0x1F;
+		const uint8_t b5 = (color >> 10) & 0x1F;
+
+		const size_t out = i * 4;
+
+		image.rgba[out + 0] = expand5To8(r5);
+		image.rgba[out + 1] = expand5To8(g5);
+		image.rgba[out + 2] = expand5To8(b5);
+		image.rgba[out + 3] = 255;
+	}
+
+	return image;
+}
+
+static bool isRGB555Packet(const RawPacket& packet)
+{
+	if (packet.data.size() < 16)
+		return false;
+
+	const uint32_t width = readU32LE(packet.data, 4);
+	const uint32_t height = readU32LE(packet.data, 8);
+
+	if (width == 0 || height == 0)
+		return false;
+
+	const size_t expectedSize =
+	    16 + static_cast<size_t>(width) * height * 2;
+
+	return packet.data.size() == expectedSize;
+}
+
+static rawTexture convertTexturePacketToImage(const RawPacket& packet)
+{
+	constexpr size_t paletteSize = 256 * 3;
+
+	rawTexture image;
+
+	if (packet.data.size() < 12 + paletteSize)
+		return image;
+
+	size_t headerSize = 12;
+	uint32_t width = 256;
+	uint32_t height = 256;
+
+	// Header layout:
+	// 0x04 = width
+	// 0x06 = height
+	// 0x08 = palette size marker 0x0300
+	if (readU16LE(packet.data, 8) == 0x0300)
+	{
+		width = readU16LE(packet.data, 4);
+		height = readU16LE(packet.data, 6);
+		headerSize = 12;
+	}
+	// Alternate header layout:
+	// 0x08 = width
+	// 0x0A = height
+	// 0x0C = palette size marker 0x0300
+	else if (readU16LE(packet.data, 12) == 0x0300)
+	{
+		width = readU16LE(packet.data, 8);
+		height = readU16LE(packet.data, 10);
+		headerSize = 16;
+	}
+
+	if (width == 0 || height == 0)
+		return image;
+
+	const size_t pixelOffset = headerSize + paletteSize;
+
+	if (packet.data.size() <= pixelOffset)
+		return image;
+
+	const uint8_t* palette = packet.data.data() + headerSize;
+	const uint8_t* pixels = packet.data.data() + pixelOffset;
+
+	const size_t pixelDataSize = packet.data.size() - pixelOffset;
+	const size_t pixelCount = static_cast<size_t>(width) * height;
+
+	const bool is8bpp = pixelDataSize >= pixelCount;
+	const bool is4bpp = !is8bpp && pixelDataSize >= (pixelCount / 2);
+
+	if (!is8bpp && !is4bpp)
+		return image;
+
+	image.width = width;
+	image.height = height;
+	image.rgba.resize(pixelCount * 4);
+
+	auto writePaletteColor = [&](size_t outPixelIndex, uint8_t paletteIndex)
+	{
+		const size_t palOff = static_cast<size_t>(paletteIndex) * 3;
+		const size_t outOff = outPixelIndex * 4;
+
+		image.rgba[outOff + 0] = palette[palOff + 0];
+		image.rgba[outOff + 1] = palette[palOff + 1];
+		image.rgba[outOff + 2] = palette[palOff + 2];
+		image.rgba[outOff + 3] = 255;
+	};
+
+	if (is8bpp)
+	{
+		for (size_t i = 0; i < pixelCount; i++)
+		{
+			writePaletteColor(i, pixels[i]);
+		}
+	}
+	else
+	{
+		for (uint32_t y = 0; y < height; y++)
+		{
+			for (uint32_t x = 0; x < width; x += 2)
+			{
+				const size_t byteIndex =
+				    (static_cast<size_t>(y) * width + x) / 2;
+
+				if (byteIndex >= pixelDataSize)
+					continue;
+
+				const uint8_t packed = pixels[byteIndex];
+
+				const uint8_t lowNibble = packed & 0x0F;
+				const uint8_t highNibble = packed >> 4;
+
+				const uint32_t paletteBlock = (x / 64) + ((y / 64) * 4);
+
+				const uint8_t index0 = static_cast<uint8_t>(paletteBlock * 16 + lowNibble);
+				const uint8_t index1 = static_cast<uint8_t>(paletteBlock * 16 + highNibble);
+
+				const size_t outIndex0 = static_cast<size_t>(y) * width + x;
+				const size_t outIndex1 = outIndex0 + 1;
+
+				writePaletteColor(outIndex0, index0);
+
+				if (x + 1 < width)
+					writePaletteColor(outIndex1, index1);
+			}
+		}
+	}
+
+	return image;
 }
 
 static bool readRawFileToMemory(const fs::path& inputFilePath, RawReadResult& result)
@@ -477,17 +710,27 @@ static bool readRawFileToMemory(const fs::path& inputFilePath, RawReadResult& re
             }
 		}
 
-		if (packet.data[0] == 0x01 && packet.data[1] == 0x01)
+		if (packet.data[0] == 0x01 && packet.data[1] == 0x01) //anm
 		{
 			result.anmPackets.push_back(std::move(packet));
 		}
-		else if (packet.data[0] == 0x02 && packet.data[1] == 0x01 or packet.data[0] == 0x03 && packet.data[1] == 0x01)
+		else if (packet.data[0] == 0x02 && packet.data[1] == 0x01 or packet.data[0] == 0x03 && packet.data[1] == 0x01) //all
 		{
 			result.allPackets.push_back(std::move(packet));
 		}
-		else if (packet.data[0] != 35)
+		else if (packet.data[0] != 35) // infer texture if not all, anm or entdata
 		{
-			result.rawPackets.push_back(std::move(packet));
+			rawTexture convPacket;
+			if (isRGB555Packet(packet))
+			{
+				convPacket = convertRGB555PacketToImage(packet);
+			}
+			else
+			{
+				convPacket = convertTexturePacketToImage(packet);
+			}
+			convPacket.image = createGLTex(convPacket);
+			result.texPackets.push_back(std::move(convPacket));
 		}
 
 		packetIndex++;
