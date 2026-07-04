@@ -1,6 +1,7 @@
 #pragma once
+
+#include "common.hpp"
 #include <cstdint>
-#include <common.h>
 #include <vector>
 #include <array>
 
@@ -28,7 +29,9 @@ struct DataGroupHeader {
     uint8_t collisionType = 0;
     uint8_t flags = 0;
 
-    bool LOD = (flags & 0x04);
+    bool hasLodFlag() const {
+        return (flags & 0x04) != 0;
+    }
 };
 
 struct MeshVert {

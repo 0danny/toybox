@@ -6,8 +6,8 @@
 //0x0101  infinite wall collision
 //0x0104  collision footer
 
-#include <ALL.h>
-#include <common.h>
+#include "ALL.hpp"
+#include "common.hpp"
 #include <iostream>
 #include <fstream>
 #include <print>
@@ -478,7 +478,7 @@ AllFile readALL(std::ifstream& file) {
             if (h.type == DataGroup::Collision ||
                 h.type == DataGroup::DynamicCollision) {
                 std::cout << ", collisionType " << static_cast<int>(h.collisionType)
-                    << ", lodFlag " << h.LOD;
+                    << ", lodFlag " << h.hasLodFlag();
             }
 
             std::cout << "\n";

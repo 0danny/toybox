@@ -13,7 +13,7 @@
 #include <iostream>
 #include <print>
 #include <vector>
-#include <RAW.h>
+#include <RAW.hpp>
 #include <GLFW/glfw3.h>
 
 constexpr int32_t kMaxActors = 64;

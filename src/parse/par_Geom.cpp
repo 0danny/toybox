@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <print>
 #include <cstdlib>
-#include "NGN.h"
+#include "NGN.hpp"
 
 const std::streamsize readUInt32 = 4;
 const std::streamsize readUInt16 = 2;
