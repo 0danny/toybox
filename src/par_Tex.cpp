@@ -1,7 +1,7 @@
 #include <fstream>
 #include <chrono>
 #include <GLFW/glfw3.h>
-#include "structs.h"
+#include "NGN.h"
 #include <print>
 
 const std::streamsize readUInt32 = 4;

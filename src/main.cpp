@@ -8,11 +8,15 @@
 #include <filesystem>
 #include <print>
 #include <vector>
-#include "structs.h"
+
+#include "RAW.h"
+#include "NGN.h"
+#include "All.h"
 
 std::vector<Texture> returnImages();
-std::filesystem::path OpenFileDialog();
+std::filesystem::path OpenFileDialog(const std::wstring& extension);
 void readNGN(std::ifstream& file);
+AllFile readALL(std::ifstream& file);
 RawReadResult readRAW(const std::filesystem::path& inputFilePath);
 
 static std::vector<Texture> textures;
@@ -20,7 +24,7 @@ std::vector<rawTexture> texPackets;
 
 void openNGN() {
 	if (ImGui::Button("Open NGN")){
-		std::filesystem::path ngnPath = OpenFileDialog();
+		std::filesystem::path ngnPath = OpenFileDialog(L".ngn");
 		std::ifstream file(ngnPath, std::ios::binary);
 		readNGN(file);
 		textures = returnImages();
@@ -31,7 +35,7 @@ void openNGN() {
 
 void openRAW() {
 	if (ImGui::Button("Open RAW")){
-	std::filesystem::path rawPath = OpenFileDialog();
+	std::filesystem::path rawPath = OpenFileDialog(L".raw");
 
 	RawReadResult raw = readRAW(rawPath);
 	
@@ -52,6 +56,15 @@ void openRAW() {
 	return;
 }
 
+void openALL() {
+	if (ImGui::Button("Open ALL")){
+		std::filesystem::path allPath = OpenFileDialog(L".all");
+		std::ifstream file(allPath, std::ios::binary);
+		AllFile all = readALL(file);
+	}
+	return;
+}
+
 int main()
 {
 	if (! glfwInit())
@@ -59,7 +72,7 @@ int main()
 
 	const char* glsl_version = "#version 130";
 
-	GLFWwindow* window = glfwCreateWindow(1280, 720, "ToyBox", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(1280, 1000, "ToyBox", nullptr, nullptr);
 
 	if (! window)
 	{
@@ -91,20 +104,21 @@ int main()
 
 		openNGN(); // select NGN and parse
 		openRAW();
+		openALL();
 
         ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
 		if(textures.size() > 0){
 			for(int i = 0; i < textures.size(); i++){
-				ImGui::Text("%s, %dx%d", textures[i].name.c_str(), textures[i].x, textures[i].y);
-				ImGui::Image(textures[i].image, ImVec2(textures[i].x,textures[i].y)); // if textures have been extracted, display them all
+				ImGui::Text("%s - %dx%d", textures[i].name.c_str(), textures[i].x, textures[i].y);
+				ImGui::Image(textures[i].image, ImVec2(textures[i].x*1.5,textures[i].y*1.5)); // if textures have been extracted, display them all
 			}
 		}
 
 		if(texPackets.size() > 0){
 			for(int i = 0; i < texPackets.size(); i++){
-				ImGui::Text("tex%d %dx%d", i, texPackets[i].width, texPackets[i].height);
-				ImGui::Image(texPackets[i].image, ImVec2(texPackets[i].width,texPackets[i].height)); // if textures have been extracted, display them all
+				ImGui::Text("tex%d - %dx%d", i, texPackets[i].width, texPackets[i].height);
+				ImGui::Image(texPackets[i].image, ImVec2(texPackets[i].width*1.5,texPackets[i].height*1.5)); // if textures have been extracted, display them all
 			}
 		}	
 

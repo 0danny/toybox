@@ -37,8 +37,13 @@ add_executable(toybox
     src/par_Geom.cpp
     src/par_NGN.cpp
     src/par_RAW.cpp
+    src/par_ALL.cpp
     src/file.cpp
-    src/structs.h
+
+    src/common.h
+    src/RAW.h
+    src/NGN.h
+    src/ALL.h
 )
 
 target_include_directories(toybox PRIVATE

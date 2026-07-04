@@ -13,7 +13,7 @@
 #include <iostream>
 #include <print>
 #include <vector>
-#include <structs.h>
+#include <RAW.h>
 #include <GLFW/glfw3.h>
 
 constexpr int32_t kMaxActors = 64;
@@ -743,6 +743,7 @@ static bool readRawFileToMemory(const fs::path& inputFilePath, RawReadResult& re
 
 RawReadResult readRAW(const fs::path& inputFilePath)
 {
+	auto start_time = std::chrono::high_resolution_clock::now();
 	RawReadResult result;
 
 	if ( inputFilePath.empty() )
@@ -776,5 +777,7 @@ RawReadResult readRAW(const fs::path& inputFilePath)
 		readRawFileToMemory(inputFilePath, result);
 	}
 
+	auto end_time = std::chrono::high_resolution_clock::now();
+	std::println("~Took {}ms to parse .raw file", std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
 	return result;
 }

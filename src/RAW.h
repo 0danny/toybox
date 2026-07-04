@@ -1,15 +1,7 @@
 #pragma once
-#include <string>
+#include "common.h"
 #include <vector>
-#include <GLFW/glfw3.h>
 #include <filesystem>
-
-struct Texture {
-	std::string name;
-    GLuint image;
-	int x;
-	int y;
-};
 
 struct rawTexture
 {
@@ -17,39 +9,6 @@ struct rawTexture
 	uint32_t width = 0;
 	uint32_t height = 0;
 	std::vector<uint8_t> rgba;
-};
-
-struct Vertex {
-	float x, y, z;       // Position
-	float nx, ny, nz;    // Normal
-	float u, v;          // UV
-	float r, g, b, a;    // Color
-};
-
-struct Prim {
-	std::vector<uint16_t> indices;
-	GLuint vao, vbo, ebo;
-	GLuint textureId; // set
-};
-
-struct Shape {
-	std::string shapeName; // set
-	std::vector<std::string> textureIndex; // set
-	std::vector<int> materialIndex; // set
-	std::vector<Vertex> vertices; // set
-	std::vector<Prim> primitives; // "set"
-};
-
-struct Vector3I
-{
-	int32_t x;
-	int32_t y;
-	int32_t z;
-
-	void print()
-	{
-		printf("[%d, %d, %d]\n", x, y, z);
-	}
 };
 
 struct EntityControl
