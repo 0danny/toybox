@@ -41,18 +41,22 @@ void destroyCollisionRenderer();
 Camera camera;
 CollisionWireframeRenderer collisionRenderer;
 
-void openNGN() {
-	if (ImGui::Button("Open NGN")) {
+void openNGN()
+{
+	if (ImGui::Button("Open NGN"))
+	{
 		std::filesystem::path ngnPath = OpenFileDialog(L".ngn");
 
-		if (ngnPath.empty()) {
+		if (ngnPath.empty())
+		{
 			std::println("No NGN file selected");
 			return;
 		}
 
 		std::ifstream file(ngnPath, std::ios::binary);
 
-		if (!file) {
+		if (! file)
+		{
 			std::println("Failed to open NGN file");
 			return;
 		}
@@ -66,11 +70,14 @@ void openNGN() {
 	return;
 }
 
-void openRAW() {
-	if (ImGui::Button("Open RAW")) {
+void openRAW()
+{
+	if (ImGui::Button("Open RAW"))
+	{
 		std::filesystem::path rawPath = OpenFileDialog(L".raw");
 
-		if (rawPath.empty()) {
+		if (rawPath.empty())
+		{
 			std::println("No RAW file selected");
 			return;
 		}
@@ -91,18 +98,22 @@ void openRAW() {
 	return;
 }
 
-void openALL() {
-	if (ImGui::Button("Open ALL")) {
+void openALL()
+{
+	if (ImGui::Button("Open ALL"))
+	{
 		std::filesystem::path allPath = OpenFileDialog(L".all");
 
-		if (allPath.empty()) {
+		if (allPath.empty())
+		{
 			std::println("No ALL file selected");
 			return;
 		}
 
 		std::ifstream file(allPath, std::ios::binary);
 
-		if (!file) {
+		if (! file)
+		{
 			std::println("Failed to open ALL file");
 			return;
 		}
@@ -119,24 +130,19 @@ void openALL() {
 	return;
 }
 
-
 int main()
 {
-	if (!glfwInit()) {
+	if (! glfwInit())
+	{
 		return 1;
 	}
 
 	const char* glsl_version = "#version 130";
 
-	GLFWwindow* window = glfwCreateWindow(
-		1280,
-		1000,
-		"ToyBox",
-		nullptr,
-		nullptr
-	);
+	GLFWwindow* window = glfwCreateWindow(1280, 1000, "ToyBox", nullptr, nullptr);
 
-	if (!window) {
+	if (! window)
+	{
 		glfwTerminate();
 		return 1;
 	}
@@ -144,7 +150,8 @@ int main()
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
 
-	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+	if (! gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
+	{
 		std::println("Failed to initialize GLAD");
 		glfwDestroyWindow(window);
 		glfwTerminate();
@@ -166,7 +173,7 @@ int main()
 
 	double lastTime = glfwGetTime();
 
-	while (!glfwWindowShouldClose(window))
+	while (! glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
 
@@ -190,18 +197,9 @@ int main()
 
 		ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
-		ImGui::Text(
-			"Camera: %.2f %.2f %.2f",
-			camera.position.x,
-			camera.position.y,
-			camera.position.z
-		);
+		ImGui::Text("Camera: %.2f %.2f %.2f", camera.position.x, camera.position.y, camera.position.z);
 
-		ImGui::Text(
-			"Yaw/Pitch: %.1f %.1f",
-			camera.yaw,
-			camera.pitch
-		);
+		ImGui::Text("Yaw/Pitch: %.1f %.1f", camera.yaw, camera.pitch);
 
 		ImGui::Text("Controls:");
 		ImGui::Text("  W/S = move forward/back");
@@ -209,7 +207,8 @@ int main()
 		ImGui::Text("  Q/E = move up/down");
 		ImGui::Text("  Arrow keys = look around");
 
-		if (loadedAll.has_value()) {
+		if (loadedAll.has_value())
+		{
 			ImGui::Separator();
 
 			ImGui::Text("ALL loaded");
@@ -218,57 +217,34 @@ int main()
 			ImGui::Text("Collision line vertices: %d", collisionRenderer.vertexCount);
 			ImGui::Text("Collision lines: %d", collisionRenderer.vertexCount / 2);
 
-			ImGui::Text(
-				"Collision center: %.2f %.2f %.2f",
-				collisionRenderer.centerX,
-				collisionRenderer.centerY,
-				collisionRenderer.centerZ
-			);
+			ImGui::Text("Collision center: %.2f %.2f %.2f", collisionRenderer.centerX, collisionRenderer.centerY, collisionRenderer.centerZ);
 
 			ImGui::Text("Collision scale: %.6f", collisionRenderer.scale);
 		}
 
-		if (textures.size() > 0) {
+		if (textures.size() > 0)
+		{
 			ImGui::Separator();
 			ImGui::Text("NGN Textures:");
 
-			for (int i = 0; i < static_cast<int>(textures.size()); i++) {
-				ImGui::Text(
-					"%s - %dx%d",
-					textures[i].name.c_str(),
-					textures[i].x,
-					textures[i].y
-				);
+			for (int i = 0; i < static_cast<int>(textures.size()); i++)
+			{
+				ImGui::Text("%s - %dx%d", textures[i].name.c_str(), textures[i].x, textures[i].y);
 
-				ImGui::Image(
-					textures[i].image,
-					ImVec2(
-						textures[i].x * 1.5f,
-						textures[i].y * 1.5f
-					)
-				);
+				ImGui::Image(textures[i].image, ImVec2(textures[i].x * 1.5f, textures[i].y * 1.5f));
 			}
 		}
 
-		if (texPackets.size() > 0) {
+		if (texPackets.size() > 0)
+		{
 			ImGui::Separator();
 			ImGui::Text("RAW Textures:");
 
-			for (int i = 0; i < static_cast<int>(texPackets.size()); i++) {
-				ImGui::Text(
-					"tex%d - %dx%d",
-					i,
-					texPackets[i].width,
-					texPackets[i].height
-				);
+			for (int i = 0; i < static_cast<int>(texPackets.size()); i++)
+			{
+				ImGui::Text("tex%d - %dx%d", i, texPackets[i].width, texPackets[i].height);
 
-				ImGui::Image(
-					texPackets[i].image,
-					ImVec2(
-						texPackets[i].width * 1.5f,
-						texPackets[i].height * 1.5f
-					)
-				);
+				ImGui::Image(texPackets[i].image, ImVec2(texPackets[i].width * 1.5f, texPackets[i].height * 1.5f));
 			}
 		}
 
@@ -281,7 +257,8 @@ int main()
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		if (showCollisionWireframe) {
+		if (showCollisionWireframe)
+		{
 			drawCollisionWireframe(width, height);
 		}
 

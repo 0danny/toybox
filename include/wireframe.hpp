@@ -1,7 +1,8 @@
 #pragma once
 #include <GLFW/glfw3.h>
 
-struct CollisionWireframeRenderer {
+struct CollisionWireframeRenderer
+{
 	GLuint vao = 0;
 	GLuint vbo = 0;
 	GLuint shader = 0;
@@ -15,14 +16,16 @@ struct CollisionWireframeRenderer {
 	float scale = 1.0f;
 };
 
-struct Vec3f {
+struct Vec3f
+{
 	float x = 0.0f;
 	float y = 0.0f;
 	float z = 0.0f;
 };
 
-struct Camera {
-	Vec3f position{ 0.0f, 0.0f, 3.0f };
+struct Camera
+{
+	Vec3f position { 0.0f, 0.0f, 3.0f };
 
 	float yaw = -90.0f;
 	float pitch = 0.0f;

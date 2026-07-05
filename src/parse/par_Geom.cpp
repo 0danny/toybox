@@ -13,14 +13,14 @@ std::vector<Texture> returnImages();
 
 std::vector<Shape> Shapes;
 
-std::vector<Shape> returnShapes() {
-	return Shapes;
-}
+std::vector<Shape> returnShapes() { return Shapes; }
 
-std::string getShapeName(std::ifstream& file) {
+std::string getShapeName(std::ifstream& file)
+{
 	uint32_t subBlock;
 	file.read(reinterpret_cast<char*>(&subBlock), readUInt32);
-	if (subBlock != uint32_t(64)) {
+	if (subBlock != uint32_t(64))
+	{
 		std::println("SUBBLOCK MISALIGNED");
 		exit(EXIT_FAILURE);
 	}
@@ -32,10 +32,12 @@ std::string getShapeName(std::ifstream& file) {
 	return shapeName;
 }
 
-std::vector<std::string> getTextureNames(std::ifstream& file) {
+std::vector<std::string> getTextureNames(std::ifstream& file)
+{
 	uint32_t subBlock;
 	file.read(reinterpret_cast<char*>(&subBlock), readUInt32);
-	if (subBlock != uint32_t(65)) {
+	if (subBlock != uint32_t(65))
+	{
 		std::println("SUBBLOCK MISALIGNED");
 		exit(EXIT_FAILURE);
 	}
@@ -48,7 +50,8 @@ std::vector<std::string> getTextureNames(std::ifstream& file) {
 	textureNames.resize(textureCount);
 
 	file.seekg(4, std::ios::cur); // skips unknownBytes
-	for (uint16_t i = 0; i < textureCount; i++) {
+	for (uint16_t i = 0; i < textureCount; i++)
+	{
 		uint8_t texNameByteCount;
 		file.read(reinterpret_cast<char*>(&texNameByteCount), readUInt8);
 		std::string texName(texNameByteCount, '\0');
@@ -60,10 +63,12 @@ std::vector<std::string> getTextureNames(std::ifstream& file) {
 	return textureNames;
 }
 
-std::vector<int> getMaterialIndexes(std::ifstream& file) {
+std::vector<int> getMaterialIndexes(std::ifstream& file)
+{
 	uint32_t subBlock;
 	file.read(reinterpret_cast<char*>(&subBlock), readUInt32);
-	if (subBlock != uint32_t(66)) {
+	if (subBlock != uint32_t(66))
+	{
 		std::println("SUBBLOCK MISALIGNED");
 		exit(EXIT_FAILURE);
 	}
@@ -73,7 +78,8 @@ std::vector<int> getMaterialIndexes(std::ifstream& file) {
 	file.read(reinterpret_cast<char*>(&materialCount), readUInt32);
 	materialIndexes.resize(materialCount);
 
-	for (uint32_t i = 0; i < materialCount; i++) {
+	for (uint32_t i = 0; i < materialCount; i++)
+	{
 		file.seekg(4, std::ios::cur); // skips materialId
 		uint32_t materialSize;
 		file.read(reinterpret_cast<char*>(&materialSize), readUInt32);
@@ -91,10 +97,12 @@ std::vector<int> getMaterialIndexes(std::ifstream& file) {
 	return materialIndexes;
 }
 
-std::vector<Vertex> getRawVertexData(std::ifstream& file) {
+std::vector<Vertex> getRawVertexData(std::ifstream& file)
+{
 	uint32_t subBlock;
 	file.read(reinterpret_cast<char*>(&subBlock), readUInt32);
-	if (subBlock != uint32_t(67)) {
+	if (subBlock != uint32_t(67))
+	{
 		std::println("SUBBLOCK MISALIGNED");
 		exit(EXIT_FAILURE);
 	}
@@ -103,7 +111,8 @@ std::vector<Vertex> getRawVertexData(std::ifstream& file) {
 	uint32_t vertexCount;
 	file.read(reinterpret_cast<char*>(&vertexCount), readUInt32);
 	rawVertexData.resize(vertexCount);
-	for (uint32_t i = 0; i < vertexCount; i++) {
+	for (uint32_t i = 0; i < vertexCount; i++)
+	{
 		Vertex currentVertex = rawVertexData[i];
 		file.read(reinterpret_cast<char*>(&currentVertex.x), readUInt32);
 		file.read(reinterpret_cast<char*>(&currentVertex.y), readUInt32);
@@ -121,10 +130,12 @@ std::vector<Vertex> getRawVertexData(std::ifstream& file) {
 	return rawVertexData;
 }
 
-std::vector<Prim> getPrimitiveData(std::ifstream& file, Shape currentShape) {
+std::vector<Prim> getPrimitiveData(std::ifstream& file, Shape currentShape)
+{
 	uint32_t subBlock;
 	file.read(reinterpret_cast<char*>(&subBlock), readUInt32);
-	if (subBlock != uint32_t(68)) {
+	if (subBlock != uint32_t(68))
+	{
 		std::println("SUBBLOCK MISALIGNED");
 		exit(EXIT_FAILURE);
 	}
@@ -135,7 +146,8 @@ std::vector<Prim> getPrimitiveData(std::ifstream& file, Shape currentShape) {
 	std::vector<Prim> primitives;
 	primitives.resize(primitiveCount);
 
-	for (uint32_t i = 0; i < primitiveCount; i++) {
+	for (uint32_t i = 0; i < primitiveCount; i++)
+	{
 		Prim currentPrimitive = primitives[i];
 
 		uint32_t primitiveType;
@@ -143,13 +155,11 @@ std::vector<Prim> getPrimitiveData(std::ifstream& file, Shape currentShape) {
 		uint16_t materialIndex;
 		file.read(reinterpret_cast<char*>(&materialIndex), readUInt16);
 
-		if (currentShape.materialIndex[materialIndex] != -1) { // if a texture is to be found, link it to the prim, else set it to NULL
+		if (currentShape.materialIndex[materialIndex] != -1)
+		{ // if a texture is to be found, link it to the prim, else set it to NULL
 			std::string target = currentShape.textureIndex[currentShape.materialIndex[materialIndex]];
 			std::vector<Texture> images = returnImages();
-			auto it = std::find_if(images.begin(), images.end(),
-				[target](const Texture& s) {
-					return s.name == target;
-				});
+			auto it = std::find_if(images.begin(), images.end(), [target](const Texture& s) { return s.name == target; });
 			currentPrimitive.textureId = it->image;
 		}
 		else
@@ -160,20 +170,24 @@ std::vector<Prim> getPrimitiveData(std::ifstream& file, Shape currentShape) {
 
 		std::vector<uint16_t> indices(vertexCount);
 
-		for (uint16_t n = 0; n < vertexCount; n++) {
+		for (uint16_t n = 0; n < vertexCount; n++)
+		{
 			uint16_t vertexNum;
 			file.read(reinterpret_cast<char*>(&vertexNum), readUInt16);
 			indices[n] = vertexNum;
 		}
 
-		if (primitiveType != 4) {
+		if (primitiveType != 4)
+		{
 			currentPrimitive.indices = indices;
 		}
-		else if (primitiveType == 4){
-			//if (vertexCount % 4 == 0)
-				//std::println("yeaaah idk if this is a quad lil bro");
+		else if (primitiveType == 4)
+		{
+			// if (vertexCount % 4 == 0)
+			// std::println("yeaaah idk if this is a quad lil bro");
 			std::vector<uint16_t> triangleIndices;
-			for (size_t q = 0; q + 3 < indices.size(); q += 4) {
+			for (size_t q = 0; q + 3 < indices.size(); q += 4)
+			{
 				uint16_t a = indices[q];
 				uint16_t b = indices[q + 1];
 				uint16_t c = indices[q + 2];
@@ -191,16 +205,15 @@ std::vector<Prim> getPrimitiveData(std::ifstream& file, Shape currentShape) {
 			}
 			currentPrimitive.indices = triangleIndices;
 		}
-
 	}
 	file.seekg(8, std::ios::cur); // skips end of block padding
 	return primitives;
 }
 
-
-
-void readGeomBlock(std::ifstream& file, bool LOD) {
-	if (LOD == false) {
+void readGeomBlock(std::ifstream& file, bool LOD)
+{
+	if (LOD == false)
+	{
 		auto start_time = std::chrono::high_resolution_clock::now();
 
 		uint32_t shapeCount;
@@ -210,19 +223,20 @@ void readGeomBlock(std::ifstream& file, bool LOD) {
 
 		std::println("~Shapes: {}", shapeCount);
 
-		for (uint32_t i = 0; i < shapeCount; i++) {
-			Shape currentShape = Shapes[i];															// Set currentShape
-			//std::println("currentShape set (Shape {})",i);
-			currentShape.shapeName = getShapeName(file);											// Get shapeName
-			//std::println("Shape Passed ({})",currentShape.shapeName);
-			currentShape.textureIndex = getTextureNames(file);										// Get textureNames
-			//std::println("Textures Passed ({} Texture Names)",currentShape.textureIndex.size());
-			currentShape.materialIndex = getMaterialIndexes(file);									// Get materialIndexes
-			//std::println("Materials Passed ({} Material Indexes)",currentShape.materialIndex.size());
-			currentShape.vertices = getRawVertexData(file);											// Get rawVertexData
-			//std::println("Vertex Passed ({} Verticies)", currentShape.vertices.size());
-			currentShape.primitives = getPrimitiveData(file, currentShape);							// Get primData
-			//std::println("Primitives Passed ({} Prims)",currentShape.primitives.size());
+		for (uint32_t i = 0; i < shapeCount; i++)
+		{
+			Shape currentShape = Shapes[i]; // Set currentShape
+			// std::println("currentShape set (Shape {})",i);
+			currentShape.shapeName = getShapeName(file); // Get shapeName
+			// std::println("Shape Passed ({})",currentShape.shapeName);
+			currentShape.textureIndex = getTextureNames(file); // Get textureNames
+			// std::println("Textures Passed ({} Texture Names)",currentShape.textureIndex.size());
+			currentShape.materialIndex = getMaterialIndexes(file); // Get materialIndexes
+			// std::println("Materials Passed ({} Material Indexes)",currentShape.materialIndex.size());
+			currentShape.vertices = getRawVertexData(file); // Get rawVertexData
+			// std::println("Vertex Passed ({} Verticies)", currentShape.vertices.size());
+			currentShape.primitives = getPrimitiveData(file, currentShape); // Get primData
+			// std::println("Primitives Passed ({} Prims)",currentShape.primitives.size());
 		}
 		std::println("~Shapes Indexed: {}", Shapes.size());
 
@@ -232,7 +246,8 @@ void readGeomBlock(std::ifstream& file, bool LOD) {
 			txt = " (LOD)";
 		std::println("~Took {}ms to parse geometry{}", std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count(), txt);
 	}
-	else {
+	else
+	{
 		std::println("~LOD Geometry Skipped!");
 	}
 }

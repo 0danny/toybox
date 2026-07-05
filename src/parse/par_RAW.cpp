@@ -40,8 +40,7 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 	uint8_t* afterHeader = p_inBuffer + 15;
 	uint32_t bitAccum = 4 * p_inBuffer[14] + 2;
 
-	auto copyLiteral4 = [&]()
-	{
+	auto copyLiteral4 = [&]() {
 		p_outBuffer[0] = afterHeader[0];
 		p_outBuffer[1] = afterHeader[1];
 		p_outBuffer[2] = afterHeader[2];
@@ -53,16 +52,16 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 
 	do
 	{
-		while ( true )
+		while (true)
 		{
-			while ( true )
+			while (true)
 			{
-				while ( true )
+				while (true)
 				{
 					bitAccum *= 2;
 					uint32_t bitTest = (bitAccum >> 8) & 1;
 
-					if ( ! bitTest )
+					if (! bitTest)
 					{
 						bitAccum *= 2;
 
@@ -71,16 +70,16 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 						bitTest = (bitAccum >> 8) & 1;
 					}
 
-					if ( bitTest )
+					if (bitTest)
 					{
 						bitAccum &= 0xFF;
 
-						if ( bitAccum )
+						if (bitAccum)
 							break;
 
 						bitAccum = bitTest + 2 * (*afterHeader++);
 
-						if ( (bitAccum & 0x100) != 0 )
+						if ((bitAccum & 0x100) != 0)
 							break;
 					}
 
@@ -94,20 +93,20 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 				uint32_t lengthCodeBit = ((2 * bitAccum) >> 8) & 1;
 				lengthCode &= 0xFF;
 
-				if ( ! lengthCode )
+				if (! lengthCode)
 				{
 					lengthCode = lengthCodeBit + 2 * (*afterHeader++);
 					lengthCodeBit = (lengthCode >> 8) & 1;
 				}
 
-				if ( lengthCodeBit )
+				if (lengthCodeBit)
 					break;
 
 				uint32_t shiftedLengthCode = 2 * lengthCode;
 				uint32_t shiftedLengthBit = (shiftedLengthCode >> 8) & 1;
 				shiftedLengthCode &= 0xFF;
 
-				if ( ! shiftedLengthCode )
+				if (! shiftedLengthCode)
 				{
 					LOBYTE_RD(lengthCodeBit) = (*afterHeader++);
 					shiftedLengthCode = shiftedLengthBit + 2 * lengthCodeBit;
@@ -121,20 +120,20 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 
 				bitAccum &= 0xFF;
 
-				if ( ! bitAccum )
+				if (! bitAccum)
 				{
 					bitAccum = extraLengthBit + 2 * (*afterHeader++);
 					extraLengthBit = (bitAccum >> 8) & 1;
 				}
 
-				if ( ! extraLengthBit )
+				if (! extraLengthBit)
 					goto LBL_DECODE_DISTANCE;
 
 				bitAccum *= 2;
 				uint32_t finalLengthBit = (bitAccum >> 8) & 1;
 				bitAccum &= 0xFF;
 
-				if ( ! bitAccum )
+				if (! bitAccum)
 				{
 					bitAccum = finalLengthBit + 2 * (*afterHeader++);
 					finalLengthBit = (bitAccum >> 8) & 1;
@@ -142,16 +141,16 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 
 				copyLength = finalLengthBit + 2 * (copyLength - 1);
 
-				if ( copyLength != 9 )
+				if (copyLength != 9)
 					goto LBL_DECODE_DISTANCE;
 
-				for ( int32_t bitIndex = 3; bitIndex >= 0; --bitIndex )
+				for (int32_t bitIndex = 3; bitIndex >= 0; --bitIndex)
 				{
 					bitAccum *= 2;
 					uint32_t literalCountBit = (bitAccum >> 8) & 1;
 					bitAccum &= 0xFF;
 
-					if ( ! bitAccum )
+					if (! bitAccum)
 					{
 						bitAccum = literalCountBit + 2 * (*afterHeader++);
 						literalCountBit = (bitAccum >> 8) & 1;
@@ -169,21 +168,20 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 				{
 					copyLiteral4();
 					--literalBlocksRemaining;
-				}
-				while ( literalBlocksRemaining );
+				} while (literalBlocksRemaining);
 			}
 
 			LOBYTE_RD(bitAccum) = 2 * lengthCode;
 			lengthFollowupBit = ((2 * lengthCode) >> 8) & 1;
 			bitAccum &= 0xFF;
 
-			if ( ! bitAccum )
+			if (! bitAccum)
 			{
 				bitAccum = lengthFollowupBit + 2 * (*afterHeader++);
 				lengthFollowupBit = (bitAccum >> 8) & 1;
 			}
 
-			if ( ! lengthFollowupBit )
+			if (! lengthFollowupBit)
 				goto LBL_COPY_MATCH;
 
 			bitAccum *= 2;
@@ -192,13 +190,13 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 			extendedLengthBit = (bitAccum >> 8) & 1;
 			bitAccum &= 0xFF;
 
-			if ( ! bitAccum )
+			if (! bitAccum)
 			{
 				bitAccum = extendedLengthBit + 2 * (*afterHeader++);
 				extendedLengthBit = (bitAccum >> 8) & 1;
 			}
 
-			if ( extendedLengthBit )
+			if (extendedLengthBit)
 				break;
 
 		LBL_DECODE_DISTANCE:
@@ -207,20 +205,20 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 			hasDistanceHighBits = (bitAccum >> 8) & 1;
 			bitAccum &= 0xFF;
 
-			if ( ! bitAccum )
+			if (! bitAccum)
 			{
 				bitAccum = hasDistanceHighBits + 2 * (*afterHeader++);
 				hasDistanceHighBits = (bitAccum >> 8) & 1;
 			}
 
-			if ( hasDistanceHighBits )
+			if (hasDistanceHighBits)
 			{
 				uint32_t distancePrefixAccum = 2 * bitAccum;
 				uint32_t distancePrefixBit = (distancePrefixAccum >> 8) & 1;
 
 				distancePrefixAccum &= 0xFF;
 
-				if ( ! distancePrefixAccum )
+				if (! distancePrefixAccum)
 				{
 					distancePrefixAccum = distancePrefixBit + 2 * (*afterHeader++);
 					distancePrefixBit = (distancePrefixAccum >> 8) & 1;
@@ -232,19 +230,19 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 				uint32_t hasMoreDistanceBits = (bitAccum >> 8) & 1;
 				bitAccum &= 0xFF;
 
-				if ( ! bitAccum )
+				if (! bitAccum)
 				{
 					bitAccum = hasMoreDistanceBits + 2 * (*afterHeader++);
 					hasMoreDistanceBits = (bitAccum >> 8) & 1;
 				}
 
-				if ( hasMoreDistanceBits )
+				if (hasMoreDistanceBits)
 				{
 					uint32_t shifted = 2 * bitAccum;
 					uint32_t distanceExtraBit = (shifted >> 8) & 1;
 					uint32_t distanceExtraAccum = shifted & 0xFF;
 
-					if ( ! distanceExtraAccum )
+					if (! distanceExtraAccum)
 					{
 						distanceExtraAccum = distanceExtraBit + 2 * (*afterHeader++);
 						distanceExtraBit = (distanceExtraAccum >> 8) & 1;
@@ -256,18 +254,18 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 					uint32_t distanceTerminatorBit = (shifted >> 8) & 1;
 					bitAccum = shifted & 0xFF;
 
-					if ( ! bitAccum )
+					if (! bitAccum)
 					{
 						bitAccum = distanceTerminatorBit + 2 * (*afterHeader++);
 						distanceTerminatorBit = (bitAccum >> 8) & 1;
 					}
 
-					if ( distanceTerminatorBit )
+					if (distanceTerminatorBit)
 						goto LBL_COMMIT_DISTANCE;
 				}
 				else
 				{
-					if ( distanceHighBits )
+					if (distanceHighBits)
 					{
 					LBL_COMMIT_DISTANCE:
 
@@ -285,7 +283,7 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 				uint32_t distanceTailBit = (bitAccum >> 8) & 1;
 				bitAccum &= 0xFF;
 
-				if ( ! bitAccum )
+				if (! bitAccum)
 				{
 					bitAccum = distanceTailBit + 2 * (*afterHeader++);
 					distanceTailBit = (bitAccum >> 8) & 1;
@@ -300,14 +298,14 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 			int32_t matchDistance = (distanceHighOrLiteralCount & 0xFF00) | (*afterHeader++);
 			uint8_t* matchSource = &p_outBuffer[-matchDistance - 1];
 
-			if ( copyLength & 1 )
+			if (copyLength & 1)
 			{
 				*p_outBuffer++ = *matchSource++;
 			}
 
 			int32_t pairCopyCount = (copyLength >> 1) - 1;
 
-			if ( matchDistance )
+			if (matchDistance)
 			{
 				p_outBuffer += 2;
 				uint16_t* matchSourceWords = (uint16_t*)(matchSource + 2);
@@ -317,7 +315,7 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 
 				int32_t wordCopyLoopCount = pairCopyCount - 1;
 
-				if ( wordCopyLoopCount >= 0 )
+				if (wordCopyLoopCount >= 0)
 				{
 					uint32_t wordCopiesRemaining = wordCopyLoopCount + 1;
 
@@ -326,8 +324,7 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 						*(uint16_t*)p_outBuffer = *matchSourceWords++;
 						p_outBuffer += 2;
 						--wordCopiesRemaining;
-					}
-					while ( wordCopiesRemaining );
+					} while (wordCopiesRemaining);
 				}
 			}
 			else
@@ -339,7 +336,7 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 				*(p_outBuffer - 2) = repeatedByte;
 				*(p_outBuffer - 1) = repeatedByte;
 
-				if ( repeatPairLoopCount >= 0 )
+				if (repeatPairLoopCount >= 0)
 				{
 					int32_t repeatPairsRemaining = repeatPairLoopCount + 1;
 
@@ -349,15 +346,14 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 						p_outBuffer[1] = repeatedByte;
 						p_outBuffer += 2;
 						--repeatPairsRemaining;
-					}
-					while ( repeatPairsRemaining );
+					} while (repeatPairsRemaining);
 				}
 			}
 		}
 
 		int32_t extendedLengthByte = (*afterHeader++);
 
-		if ( extendedLengthByte )
+		if (extendedLengthByte)
 		{
 			copyLength = extendedLengthByte + 8;
 			goto LBL_DECODE_DISTANCE;
@@ -367,21 +363,17 @@ void DecompressBuffer(uint8_t* p_inBuffer, uint8_t* p_outBuffer)
 		exitFlag = (bitAccum >> 8) & 1;
 		bitAccum &= 0xFF;
 
-		if ( ! bitAccum )
+		if (! bitAccum)
 		{
 			bitAccum = exitFlag + 2 * (*afterHeader++);
 			exitFlag = (bitAccum >> 8) & 1;
 		}
-	}
-	while ( exitFlag );
+	} while (exitFlag);
 }
 
 static uint32_t toBigEndian(uint32_t num)
 {
-	return ((num & 0x000000ff) << 24) |
-	       ((num & 0x0000ff00) << 8) |
-	       ((num & 0x00ff0000) >> 8) |
-	       ((num & 0xff000000) >> 24);
+	return ((num & 0x000000ff) << 24) | ((num & 0x0000ff00) << 8) | ((num & 0x00ff0000) >> 8) | ((num & 0xff000000) >> 24);
 }
 
 struct GLTexture
@@ -407,16 +399,7 @@ static GLuint createGLTex(const rawTexture& image)
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	glTexImage2D(
-		GL_TEXTURE_2D,
-		0,
-		GL_RGBA8,
-		static_cast<GLsizei>(image.width),
-		static_cast<GLsizei>(image.height),
-		0,
-		GL_RGBA,
-		GL_UNSIGNED_BYTE,
-		image.rgba.data()
-	);
+		GL_TEXTURE_2D, 0, GL_RGBA8, static_cast<GLsizei>(image.width), static_cast<GLsizei>(image.height), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.rgba.data());
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -428,10 +411,8 @@ static uint32_t readU32LE(const std::vector<uint8_t>& data, size_t offset)
 	if (offset + 3 >= data.size())
 		return 0;
 
-	return static_cast<uint32_t>(data[offset]) |
-	       (static_cast<uint32_t>(data[offset + 1]) << 8) |
-	       (static_cast<uint32_t>(data[offset + 2]) << 16) |
-	       (static_cast<uint32_t>(data[offset + 3]) << 24);
+	return static_cast<uint32_t>(data[offset]) | (static_cast<uint32_t>(data[offset + 1]) << 8) | (static_cast<uint32_t>(data[offset + 2]) << 16)
+		| (static_cast<uint32_t>(data[offset + 3]) << 24);
 }
 
 static uint16_t readU16LE(const std::vector<uint8_t>& data, size_t offset)
@@ -439,14 +420,10 @@ static uint16_t readU16LE(const std::vector<uint8_t>& data, size_t offset)
 	if (offset + 1 >= data.size())
 		return 0;
 
-	return static_cast<uint16_t>(data[offset]) |
-	       (static_cast<uint16_t>(data[offset + 1]) << 8);
+	return static_cast<uint16_t>(data[offset]) | (static_cast<uint16_t>(data[offset + 1]) << 8);
 }
 
-static uint8_t expand5To8(uint8_t value)
-{
-	return static_cast<uint8_t>((value << 3) | (value >> 2));
-}
+static uint8_t expand5To8(uint8_t value) { return static_cast<uint8_t>((value << 3) | (value >> 2)); }
 
 static rawTexture convertRGB555PacketToImage(const RawPacket& packet)
 {
@@ -476,9 +453,7 @@ static rawTexture convertRGB555PacketToImage(const RawPacket& packet)
 
 	for (size_t i = 0; i < pixelCount; i++)
 	{
-		const uint16_t color =
-		    static_cast<uint16_t>(pixels[i * 2]) |
-		    (static_cast<uint16_t>(pixels[i * 2 + 1]) << 8);
+		const uint16_t color = static_cast<uint16_t>(pixels[i * 2]) | (static_cast<uint16_t>(pixels[i * 2 + 1]) << 8);
 
 		const uint8_t r5 = color & 0x1F;
 		const uint8_t g5 = (color >> 5) & 0x1F;
@@ -506,8 +481,7 @@ static bool isRGB555Packet(const RawPacket& packet)
 	if (width == 0 || height == 0)
 		return false;
 
-	const size_t expectedSize =
-	    16 + static_cast<size_t>(width) * height * 2;
+	const size_t expectedSize = 16 + static_cast<size_t>(width) * height * 2;
 
 	return packet.data.size() == expectedSize;
 }
@@ -561,17 +535,16 @@ static rawTexture convertTexturePacketToImage(const RawPacket& packet)
 	const size_t pixelCount = static_cast<size_t>(width) * height;
 
 	const bool is8bpp = pixelDataSize >= pixelCount;
-	const bool is4bpp = !is8bpp && pixelDataSize >= (pixelCount / 2);
+	const bool is4bpp = ! is8bpp && pixelDataSize >= (pixelCount / 2);
 
-	if (!is8bpp && !is4bpp)
+	if (! is8bpp && ! is4bpp)
 		return image;
 
 	image.width = width;
 	image.height = height;
 	image.rgba.resize(pixelCount * 4);
 
-	auto writePaletteColor = [&](size_t outPixelIndex, uint8_t paletteIndex)
-	{
+	auto writePaletteColor = [&](size_t outPixelIndex, uint8_t paletteIndex) {
 		const size_t palOff = static_cast<size_t>(paletteIndex) * 3;
 		const size_t outOff = outPixelIndex * 4;
 
@@ -594,8 +567,7 @@ static rawTexture convertTexturePacketToImage(const RawPacket& packet)
 		{
 			for (uint32_t x = 0; x < width; x += 2)
 			{
-				const size_t byteIndex =
-				    (static_cast<size_t>(y) * width + x) / 2;
+				const size_t byteIndex = (static_cast<size_t>(y) * width + x) / 2;
 
 				if (byteIndex >= pixelDataSize)
 					continue;
@@ -627,7 +599,7 @@ static rawTexture convertTexturePacketToImage(const RawPacket& packet)
 static bool readRawFileToMemory(const fs::path& inputFilePath, RawReadResult& result)
 {
 	std::ifstream inFile(inputFilePath, std::ios::binary);
-	if ( ! inFile )
+	if (! inFile)
 	{
 		std::println("Failed to open {}", inputFilePath.string());
 		result.success = false;
@@ -640,12 +612,12 @@ static bool readRawFileToMemory(const fs::path& inputFilePath, RawReadResult& re
 
 	inFile.read(reinterpret_cast<char*>(&beUncompressedSize), sizeof(beUncompressedSize));
 
-	while ( inFile && beUncompressedSize != 0xFFFFFFFF )
+	while (inFile && beUncompressedSize != 0xFFFFFFFF)
 	{
 		uint32_t uncompressedSize = toBigEndian(beUncompressedSize);
 
 		inFile.read(reinterpret_cast<char*>(&beCompressedSize), sizeof(beCompressedSize));
-		if ( ! inFile )
+		if (! inFile)
 			break;
 
 		uint32_t compressedSize = toBigEndian(beCompressedSize);
@@ -658,14 +630,14 @@ static bool readRawFileToMemory(const fs::path& inputFilePath, RawReadResult& re
 
 		inFile.read(reinterpret_cast<char*>(compressedBuffer.data() + 8), 6 + compressedSize);
 
-		if ( ! inFile )
+		if (! inFile)
 		{
 			std::println("Failed to read compressed packet {}", packetIndex);
 			result.success = false;
 			return false;
 		}
 
-		//std::println("Inflating {}->{}", compressedSize, uncompressedSize);
+		// std::println("Inflating {}->{}", compressedSize, uncompressedSize);
 
 		DecompressBuffer(compressedBuffer.data(), decompressedBuffer.data());
 
@@ -676,45 +648,37 @@ static bool readRawFileToMemory(const fs::path& inputFilePath, RawReadResult& re
 		packet.uncompressedSize = uncompressedSize;
 		packet.data = std::move(decompressedBuffer);
 
-		if ( ! packet.data.empty() && packet.data[0] == 35 )
+		if (! packet.data.empty() && packet.data[0] == 35)
 		{
 			const size_t creatureBytes = sizeof(CreatureRam) * kMaxActors;
 
-			if ( packet.data.size() >= 4 + creatureBytes )
+			if (packet.data.size() >= 4 + creatureBytes)
 			{
 				const uint8_t* creatureBytesStart = packet.data.data() + 4;
 
-				for ( int32_t idx = 0; idx < kMaxActors; idx++ )
+				for (int32_t idx = 0; idx < kMaxActors; idx++)
 				{
-					CreatureRam creature{};
-					std::memcpy(
-					    &creature,
-					    creatureBytesStart + sizeof(CreatureRam) * idx,
-					    sizeof(CreatureRam)
-					);
+					CreatureRam creature {};
+					std::memcpy(&creature, creatureBytesStart + sizeof(CreatureRam) * idx, sizeof(CreatureRam));
 
 					result.creatures.push_back(creature);
 				}
 			}
 			else
 			{
-				std::println(
-				    "Type 35 packet {} in {} is too small for {} creatures",
-				    packetIndex,
-				    inputFilePath.string(),
-				    kMaxActors
-				);
+				std::println("Type 35 packet {} in {} is too small for {} creatures", packetIndex, inputFilePath.string(), kMaxActors);
 			}
-            while (!result.creatures.empty() && result.creatures.back().creatureId == 0) {
-                result.creatures.pop_back();
-            }
+			while (! result.creatures.empty() && result.creatures.back().creatureId == 0)
+			{
+				result.creatures.pop_back();
+			}
 		}
 
-		if (packet.data[0] == 0x01 && packet.data[1] == 0x01) //anm
+		if (packet.data[0] == 0x01 && packet.data[1] == 0x01) // anm
 		{
 			result.anmPackets.push_back(std::move(packet));
 		}
-		else if (packet.data[0] == 0x02 && packet.data[1] == 0x01 or packet.data[0] == 0x03 && packet.data[1] == 0x01) //all
+		else if (packet.data[0] == 0x02 && packet.data[1] == 0x01 or packet.data[0] == 0x03 && packet.data[1] == 0x01) // all
 		{
 			result.allPackets.push_back(std::move(packet));
 		}
@@ -746,34 +710,34 @@ RawReadResult readRAW(const fs::path& inputFilePath)
 	auto start_time = std::chrono::high_resolution_clock::now();
 	RawReadResult result;
 
-	if ( inputFilePath.empty() )
+	if (inputFilePath.empty())
 	{
 		std::println("No RAW path selected");
 		result.success = false;
 		return result;
 	}
 
-	if ( fs::is_directory(inputFilePath) )
+	if (fs::is_directory(inputFilePath))
 	{
-		//std::println("Running directory code!\n");
+		// std::println("Running directory code!\n");
 
-		for ( const auto& entry : fs::recursive_directory_iterator(inputFilePath) )
+		for (const auto& entry : fs::recursive_directory_iterator(inputFilePath))
 		{
-			if ( ! entry.is_regular_file() )
+			if (! entry.is_regular_file())
 				continue;
 
-			if ( entry.path().extension() != ".raw" )
+			if (entry.path().extension() != ".raw")
 				continue;
 
 			std::println("Found: {}", entry.path().string());
 
-			if ( ! readRawFileToMemory(entry.path(), result) )
+			if (! readRawFileToMemory(entry.path(), result))
 				break;
 		}
 	}
 	else
 	{
-		//std::println("Running file code!\n");
+		// std::println("Running file code!\n");
 		readRawFileToMemory(inputFilePath, result);
 	}
 

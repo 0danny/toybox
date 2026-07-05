@@ -9,7 +9,8 @@
 
 #include "globals.hpp"
 
-static GLuint compileShader(GLenum type, const char* source) {
+static GLuint compileShader(GLenum type, const char* source)
+{
 	GLuint shader = glCreateShader(type);
 
 	glShaderSource(shader, 1, &source, nullptr);
@@ -18,7 +19,8 @@ static GLuint compileShader(GLenum type, const char* source) {
 	GLint success = 0;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 
-	if (!success) {
+	if (! success)
+	{
 		char log[1024];
 		glGetShaderInfoLog(shader, sizeof(log), nullptr, log);
 		std::println("Shader compile error: {}", log);
@@ -27,7 +29,8 @@ static GLuint compileShader(GLenum type, const char* source) {
 	return shader;
 }
 
-GLuint createCollisionShader() {
+GLuint createCollisionShader()
+{
 	const char* vertexSource = R"(
 		#version 130
 
@@ -65,7 +68,8 @@ GLuint createCollisionShader() {
 	GLint success = 0;
 	glGetProgramiv(program, GL_LINK_STATUS, &success);
 
-	if (!success) {
+	if (! success)
+	{
 		char log[1024];
 		glGetProgramInfoLog(program, sizeof(log), nullptr, log);
 		std::println("Shader link error: {}", log);
@@ -77,18 +81,22 @@ GLuint createCollisionShader() {
 	return program;
 }
 
-void destroyCollisionRenderer() {
-	if (collisionRenderer.vbo != 0) {
+void destroyCollisionRenderer()
+{
+	if (collisionRenderer.vbo != 0)
+	{
 		glDeleteBuffers(1, &collisionRenderer.vbo);
 		collisionRenderer.vbo = 0;
 	}
 
-	if (collisionRenderer.vao != 0) {
+	if (collisionRenderer.vao != 0)
+	{
 		glDeleteVertexArrays(1, &collisionRenderer.vao);
 		collisionRenderer.vao = 0;
 	}
 
-	if (collisionRenderer.shader != 0) {
+	if (collisionRenderer.shader != 0)
+	{
 		glDeleteProgram(collisionRenderer.shader);
 		collisionRenderer.shader = 0;
 	}
