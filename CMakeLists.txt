@@ -30,41 +30,39 @@ set(IMGUI_SOURCES
     ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
 )
 
-# Build toybox
-add_executable(toybox
-    ${IMGUI_SOURCES}
-
-    src/main.cpp
-
-    src/parse/par_Tex.cpp
-    src/parse/par_Geom.cpp
-    src/parse/par_NGN.cpp
-    src/parse/par_RAW.cpp
-    src/parse/par_ALL.cpp
-
-    src/file.cpp
-    src/wireframe.cpp
-    src/shader.cpp
-
-    "external/glad/glad.c"
-)
-
-target_sources(toybox PRIVATE 
-    include/common.hpp
-    include/wireframe.hpp
-    include/globals.hpp
-
-    include/RAW.hpp
-    include/NGN.hpp
-    include/ALL.hpp
-
+set(EXTERNAL_SOURCES
+    external/glad/glad.c
     external/glad/glad.h
     external/KHR/khrplatform.h
 )
 
+# Build toybox
+add_executable(toybox
+    ${IMGUI_SOURCES}
+    ${EXTERNAL_SOURCES}
+
+    src/main.cpp
+
+    src/Parsers/TextureParser.cpp
+    src/Parsers/GeomParser.cpp
+    src/Parsers/NGNParser.cpp
+    src/Parsers/RAWParser.cpp
+    src/Parsers/ALLParser.hpp
+    src/Parsers/ALLParser.cpp
+
+    src/FileUtils.hpp
+    src/Globals.hpp
+    src/Common.hpp
+
+    src/Wireframe.hpp
+    src/Wireframe.cpp
+
+    src/Shader.hpp
+    src/Shader.cpp
+)
+
 target_include_directories(toybox PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/external
     ${IMGUI_DIR}
     ${IMGUI_DIR}/backends

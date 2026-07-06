@@ -12,40 +12,28 @@
 #include <optional>
 #include <array>
 
-#include "RAW.hpp"
-#include "NGN.hpp"
-#include "ALL.hpp"
+#include "Parsers/ALLParser.hpp"
+#include "Parsers/RAWParser.hpp"
+#include "Parsers/NGNParser.hpp"
+#include "Parsers/TextureParser.hpp"
 
-#include "wireframe.hpp"
-#include "globals.hpp"
+#include "FileUtils.hpp"
+#include "Shader.hpp"
+#include "Wireframe.hpp"
+#include "Globals.hpp"
 
-std::vector<Texture> returnImages();
-std::filesystem::path OpenFileDialog(const std::wstring& extension);
-void readNGN(std::ifstream& file);
-AllFile readALL(std::ifstream& file);
-RawReadResult readRAW(const std::filesystem::path& inputFilePath);
-
-static std::vector<Texture> textures;
-std::vector<rawTexture> texPackets;
-
-static std::optional<AllFile> loadedAll;
+static std::vector<NGNParser::Texture> textures;
+static std::vector<RawParser::rawTexture> texPackets;
+static std::optional<ALLParser::AllFile> loadedAll;
 static bool showCollisionWireframe = true;
 
 using Mat4 = std::array<float, 16>;
-
-void uploadCollisionWireframe(const AllFile& all);
-void updateCamera(GLFWwindow* window, float deltaTime);
-void drawCollisionWireframe(int32_t width, int32_t height);
-void destroyCollisionRenderer();
-
-Camera camera;
-CollisionWireframeRenderer collisionRenderer;
 
 void openNGN()
 {
 	if (ImGui::Button("Open NGN"))
 	{
-		std::filesystem::path ngnPath = OpenFileDialog(L".ngn");
+		std::filesystem::path ngnPath = FileUtils::OpenFileDialog(L".ngn");
 
 		if (ngnPath.empty())
 		{
@@ -61,8 +49,8 @@ void openNGN()
 			return;
 		}
 
-		readNGN(file);
-		textures = returnImages();
+		NGNParser::ReadNGN(file);
+		textures = TextureParser::ReturnImages();
 
 		std::println("returned {} images", textures.size());
 	}
@@ -74,7 +62,7 @@ void openRAW()
 {
 	if (ImGui::Button("Open RAW"))
 	{
-		std::filesystem::path rawPath = OpenFileDialog(L".raw");
+		std::filesystem::path rawPath = FileUtils::OpenFileDialog(L".raw");
 
 		if (rawPath.empty())
 		{
@@ -82,12 +70,12 @@ void openRAW()
 			return;
 		}
 
-		RawReadResult raw = readRAW(rawPath);
+		RawParser::RawReadResult raw = RawParser::ReadRAW(rawPath);
 
 		texPackets = raw.texPackets;
-		std::vector<CreatureRam>& creatures = raw.creatures;
-		std::vector<RawPacket>& anmPackets = raw.anmPackets;
-		std::vector<RawPacket>& allPackets = raw.allPackets;
+		std::vector<RawParser::CreatureRam>& creatures = raw.creatures;
+		std::vector<RawParser::RawPacket>& anmPackets = raw.anmPackets;
+		std::vector<RawParser::RawPacket>& allPackets = raw.allPackets;
 
 		std::println("\nreturned {} textures", texPackets.size());
 		std::println("returned {} creatures", creatures.size());
@@ -102,7 +90,7 @@ void openALL()
 {
 	if (ImGui::Button("Open ALL"))
 	{
-		std::filesystem::path allPath = OpenFileDialog(L".all");
+		std::filesystem::path allPath = FileUtils::OpenFileDialog(L".all");
 
 		if (allPath.empty())
 		{
@@ -118,13 +106,13 @@ void openALL()
 			return;
 		}
 
-		loadedAll = readALL(file);
+		loadedAll = ALLParser::ReadALL(file);
 
 		std::println("loaded ALL:");
 		std::println("  collision meshes: {}", loadedAll->collisionMeshes.size());
 		std::println("  graphics meshes: {}", loadedAll->gfxMeshes.size());
 
-		uploadCollisionWireframe(*loadedAll);
+		Wireframe::UploadCollisionWireframe(*loadedAll);
 	}
 
 	return;
@@ -181,7 +169,7 @@ int main()
 		float deltaTime = static_cast<float>(currentTime - lastTime);
 		lastTime = currentTime;
 
-		updateCamera(window, deltaTime);
+		Wireframe::UpdateCamera(window, deltaTime);
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -259,7 +247,7 @@ int main()
 
 		if (showCollisionWireframe)
 		{
-			drawCollisionWireframe(width, height);
+			Wireframe::DrawCollisionWireframe(width, height);
 		}
 
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -267,7 +255,7 @@ int main()
 		glfwSwapBuffers(window);
 	}
 
-	destroyCollisionRenderer();
+	Shader::DestroyCollisionRenderer();
 
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
