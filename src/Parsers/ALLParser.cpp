@@ -1,4 +1,4 @@
-#include "ALLParser.hpp"
+#include "Parsers/ALLParser.hpp"
 
 #include <iostream>
 #include <print>
@@ -20,7 +20,7 @@ namespace ALLParser
 	const std::streamsize readInt16 = 2;
 	const std::streamsize readUInt8 = 1;
 
-	static size_t getFileSize(std::ifstream& file)
+	size_t getFileSize(std::ifstream& file)
 	{
 		std::streampos oldPos = file.tellg();
 
@@ -35,13 +35,13 @@ namespace ALLParser
 		return static_cast<size_t>(endPos);
 	}
 
-	static void requireRange(size_t fileSize, size_t off, size_t len)
+	void requireRange(size_t fileSize, size_t off, size_t len)
 	{
 		if (off + len < off || off + len > fileSize)
 			throw std::runtime_error("EOF");
 	}
 
-	static void seekTo(std::ifstream& file, size_t off, size_t fileSize)
+	void seekTo(std::ifstream& file, size_t off, size_t fileSize)
 	{
 		requireRange(fileSize, off, 0);
 		file.seekg(static_cast<std::streamoff>(off), std::ios::beg);
@@ -51,7 +51,7 @@ namespace ALLParser
 	}
 
 	template <typename T>
-	static T readValue(std::ifstream& file, std::streamsize bytes)
+	T readValue(std::ifstream& file, std::streamsize bytes)
 	{
 		T value {};
 		file.read(reinterpret_cast<char*>(&value), bytes);
@@ -64,67 +64,67 @@ namespace ALLParser
 
 	// FILE READ HELPERS FOR COMMON TYPES
 
-	static uint8_t readU8(std::ifstream& file)
+	uint8_t readU8(std::ifstream& file)
 	{
 		return readValue<uint8_t>(file, readUInt8);
 	}
 
-	static int16_t readS16(std::ifstream& file)
+	int16_t readS16(std::ifstream& file)
 	{
 		return readValue<int16_t>(file, readInt16);
 	}
 
-	static uint32_t readU32(std::ifstream& file)
+	uint32_t readU32(std::ifstream& file)
 	{
 		return readValue<uint32_t>(file, readUInt32);
 	}
 
-	static int32_t readS32(std::ifstream& file)
+	int32_t readS32(std::ifstream& file)
 	{
 		return readValue<int32_t>(file, readInt32);
 	}
 
-	static uint8_t readU8At(std::ifstream& file, size_t off, size_t fileSize)
+	uint8_t readU8At(std::ifstream& file, size_t off, size_t fileSize)
 	{
 		requireRange(fileSize, off, sizeof(uint8_t));
 		seekTo(file, off, fileSize);
 		return readU8(file);
 	}
 
-	static int16_t readS16At(std::ifstream& file, size_t off, size_t fileSize)
+	int16_t readS16At(std::ifstream& file, size_t off, size_t fileSize)
 	{
 		requireRange(fileSize, off, sizeof(int16_t));
 		seekTo(file, off, fileSize);
 		return readS16(file);
 	}
 
-	static uint32_t readU32At(std::ifstream& file, size_t off, size_t fileSize)
+	uint32_t readU32At(std::ifstream& file, size_t off, size_t fileSize)
 	{
 		requireRange(fileSize, off, sizeof(uint32_t));
 		seekTo(file, off, fileSize);
 		return readU32(file);
 	}
 
-	static int32_t readS32At(std::ifstream& file, size_t off, size_t fileSize)
+	int32_t readS32At(std::ifstream& file, size_t off, size_t fileSize)
 	{
 		requireRange(fileSize, off, sizeof(int32_t));
 		seekTo(file, off, fileSize);
 		return readS32(file);
 	}
 
-	static Vector3S readVec3sAt(std::ifstream& file, size_t off, size_t fileSize)
+	Vector3S readVec3sAt(std::ifstream& file, size_t off, size_t fileSize)
 	{
 		return Vector3S { readS16At(file, off + 0, fileSize), readS16At(file, off + 2, fileSize), readS16At(file, off + 4, fileSize) };
 	}
 
-	static Vector3S addVec3s(Vector3S a, Vector3S b)
+	Vector3S addVec3s(Vector3S a, Vector3S b)
 	{
 		return Vector3S { static_cast<int16_t>(a.x + b.x), static_cast<int16_t>(a.y + b.y), static_cast<int16_t>(a.z + b.z) };
 	}
 
 	// END OF HELPERS
 
-	static DataGroup decodeGroupType(uint32_t type)
+	DataGroup decodeGroupType(uint32_t type)
 	{
 		switch (type)
 		{
@@ -147,7 +147,7 @@ namespace ALLParser
 		}
 	}
 
-	static Vector2F normaliseUV(Vector2u8 rawUV, uint8_t texturePageByte)
+	Vector2F normaliseUV(Vector2u8 rawUV, uint8_t texturePageByte)
 	{
 		uint8_t texturePage = texturePageByte & 0x1F;
 
@@ -157,7 +157,7 @@ namespace ALLParser
 		return Vector2F { static_cast<float>(rawUV.u) / 8192.0f + static_cast<float>(texturePage) * 0.03125f, 1.0f - static_cast<float>(rawUV.v) / 256.0f };
 	}
 
-	static MeshVert makeVertMesh(Vector3S pos, Vector2u8 uv, RGBu8 colour, uint8_t texPageByte)
+	MeshVert makeVertMesh(Vector3S pos, Vector2u8 uv, RGBu8 colour, uint8_t texPageByte)
 	{
 		MeshVert v;
 		v.pos = pos;
@@ -167,7 +167,7 @@ namespace ALLParser
 		return v;
 	}
 
-	static GFXMesh parseGFX(std::ifstream& file, const DataGroupHeader& header, size_t fileSize)
+	GFXMesh parseGFX(std::ifstream& file, const DataGroupHeader& header, size_t fileSize)
 	{
 		GFXMesh mesh;
 		mesh.header = header;
@@ -268,7 +268,7 @@ namespace ALLParser
 		return mesh;
 	}
 
-	static CollisionPoly parseCollisionPoly(std::ifstream& file, size_t off, size_t fileSize)
+	CollisionPoly parseCollisionPoly(std::ifstream& file, size_t off, size_t fileSize)
 	{
 		CollisionPoly p;
 
@@ -299,7 +299,7 @@ namespace ALLParser
 		return p;
 	}
 
-	static CollisionMesh parseCollision(std::ifstream& file, const DataGroupHeader& header, size_t fileSize)
+	CollisionMesh parseCollision(std::ifstream& file, const DataGroupHeader& header, size_t fileSize)
 	{
 		CollisionMesh mesh;
 		mesh.header = header;
@@ -354,7 +354,7 @@ namespace ALLParser
 		return mesh;
 	}
 
-	const static char* typeName(DataGroup type)
+	const char* typeName(DataGroup type)
 	{ // for debug
 		switch (type)
 		{

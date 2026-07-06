@@ -163,7 +163,7 @@ namespace Wireframe
 		return m;
 	}
 
-	static Mat4 createModelMatrix()
+	Mat4 createModelMatrix()
 	{
 		Mat4 model = identityMatrix();
 
@@ -178,7 +178,7 @@ namespace Wireframe
 		return model;
 	}
 
-	static Mat4 createMVPMatrix(int32_t width, int32_t height)
+	Mat4 createMVPMatrix(int32_t width, int32_t height)
 	{
 		float aspect = height > 0 ? static_cast<float>(width) / static_cast<float>(height) : 1.0f;
 
@@ -259,20 +259,20 @@ namespace Wireframe
 		camera.pitch = std::clamp(camera.pitch, -89.0f, 89.0f);
 	}
 
-	static void pushPoint(std::vector<float>& vertices, const Vector3S& p, const Vector3I& meshOffset)
+	void pushPoint(std::vector<float>& vertices, const Vector3S& p, const Vector3I& meshOffset)
 	{
 		vertices.push_back(static_cast<float>(p.x) + static_cast<float>(meshOffset.x));
 		vertices.push_back(static_cast<float>(p.y) + static_cast<float>(meshOffset.y));
 		vertices.push_back(static_cast<float>(p.z) + static_cast<float>(meshOffset.z));
 	}
 
-	static void pushLine(std::vector<float>& vertices, const Vector3S& a, const Vector3S& b, const Vector3I& meshOffset)
+	void pushLine(std::vector<float>& vertices, const Vector3S& a, const Vector3S& b, const Vector3I& meshOffset)
 	{
 		pushPoint(vertices, a, meshOffset);
 		pushPoint(vertices, b, meshOffset);
 	}
 
-	static std::vector<float> buildCollisionWireframeVertices(const ALLParser::AllFile& all)
+	std::vector<float> buildCollisionWireframeVertices(const ALLParser::AllFile& all)
 	{
 		std::vector<float> vertices;
 

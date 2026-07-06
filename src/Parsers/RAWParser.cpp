@@ -380,7 +380,7 @@ namespace RawParser
 		} while (exitFlag);
 	}
 
-	static uint32_t toBigEndian(uint32_t num)
+	uint32_t toBigEndian(uint32_t num)
 	{
 		return ((num & 0x000000ff) << 24) | ((num & 0x0000ff00) << 8) | ((num & 0x00ff0000) >> 8) | ((num & 0xff000000) >> 24);
 	}
@@ -392,7 +392,7 @@ namespace RawParser
 		int height = 0;
 	};
 
-	static GLuint createGLTex(const rawTexture& image)
+	GLuint createGLTex(const rawTexture& image)
 	{
 		if (image.rgba.empty() || image.width == 0 || image.height == 0)
 			return 0;
@@ -415,7 +415,7 @@ namespace RawParser
 		return textureID;
 	}
 
-	static uint32_t readU32LE(const std::vector<uint8_t>& data, size_t offset)
+	uint32_t readU32LE(const std::vector<uint8_t>& data, size_t offset)
 	{
 		if (offset + 3 >= data.size())
 			return 0;
@@ -424,7 +424,7 @@ namespace RawParser
 			| (static_cast<uint32_t>(data[offset + 3]) << 24);
 	}
 
-	static uint16_t readU16LE(const std::vector<uint8_t>& data, size_t offset)
+	uint16_t readU16LE(const std::vector<uint8_t>& data, size_t offset)
 	{
 		if (offset + 1 >= data.size())
 			return 0;
@@ -432,12 +432,12 @@ namespace RawParser
 		return static_cast<uint16_t>(data[offset]) | (static_cast<uint16_t>(data[offset + 1]) << 8);
 	}
 
-	static uint8_t expand5To8(uint8_t value)
+	uint8_t expand5To8(uint8_t value)
 	{
 		return static_cast<uint8_t>((value << 3) | (value >> 2));
 	}
 
-	static rawTexture convertRGB555PacketToImage(const RawPacket& packet)
+	rawTexture convertRGB555PacketToImage(const RawPacket& packet)
 	{
 		rawTexture image;
 
@@ -482,7 +482,7 @@ namespace RawParser
 		return image;
 	}
 
-	static bool isRGB555Packet(const RawPacket& packet)
+	bool isRGB555Packet(const RawPacket& packet)
 	{
 		if (packet.data.size() < 16)
 			return false;
@@ -498,7 +498,7 @@ namespace RawParser
 		return packet.data.size() == expectedSize;
 	}
 
-	static rawTexture convertTexturePacketToImage(const RawPacket& packet)
+	rawTexture convertTexturePacketToImage(const RawPacket& packet)
 	{
 		constexpr size_t paletteSize = 256 * 3;
 
@@ -608,7 +608,7 @@ namespace RawParser
 		return image;
 	}
 
-	static bool readRawFileToMemory(const fs::path& inputFilePath, RawReadResult& result)
+	bool readRawFileToMemory(const fs::path& inputFilePath, RawReadResult& result)
 	{
 		std::ifstream inFile(inputFilePath, std::ios::binary);
 		if (! inFile)
