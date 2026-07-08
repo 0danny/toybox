@@ -29,6 +29,12 @@ static bool showCollisionWireframe = true;
 
 using Mat4 = std::array<float, 16>;
 
+void openLevel()
+{
+	if (ImGui::Button("Open Level")) {}
+	return;
+}
+
 void openNGN()
 {
 	if (ImGui::Button("Open NGN"))
@@ -38,6 +44,7 @@ void openNGN()
 		if (ngnPath.empty())
 		{
 			std::println("No NGN file selected");
+			textures.clear();
 			return;
 		}
 
@@ -46,13 +53,13 @@ void openNGN()
 		if (! file)
 		{
 			std::println("Failed to open NGN file");
+
 			return;
 		}
 
 		NGNParser::ReadNGN(file);
 		textures = TextureParser::ReturnImages();
-
-		//std::println("returned {} images", textures.size());
+		// std::println("returned {} images", textures.size());
 	}
 
 	return;
@@ -67,6 +74,7 @@ void openRAW()
 		if (rawPath.empty())
 		{
 			std::println("No RAW file selected");
+			texPackets.clear();
 			return;
 		}
 
@@ -173,11 +181,29 @@ int main()
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
 
-		openNGN();
-		openRAW();
-		openALL();
+		ImGui::NewFrame();
+		ImGui::SetNextWindowSize(ImVec2(323.00, 976), ImGuiCond_Once);
+		ImGui::SetNextWindowPos(ImVec2(7,14), ImGuiCond_Once);
+		ImGui::Begin("Debug Window");
+
+		if (ImGui::BeginTable("", 2, ImGuiTableFlags_SizingFixedFit))
+		{
+			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+
+			ImGui::TableNextColumn();
+			openLevel();
+
+			ImGui::TableNextColumn();
+			openNGN();
+			ImGui::SameLine();
+			openRAW();
+			ImGui::SameLine();
+			openALL();
+
+			ImGui::EndTable();
+		}
 
 		ImGui::Separator();
 
@@ -199,15 +225,13 @@ int main()
 		{
 			ImGui::Separator();
 
-			ImGui::Text("ALL loaded");
 			ImGui::Text("Collision meshes: %zu", loadedAll->collisionMeshes.size());
 			ImGui::Text("Graphics meshes: %zu", loadedAll->gfxMeshes.size());
 			ImGui::Text("Collision line vertices: %d", collisionRenderer.vertexCount);
-			ImGui::Text("Collision lines: %d", collisionRenderer.vertexCount / 2);
 
 			ImGui::Text("Collision center: %.2f %.2f %.2f", collisionRenderer.centerX, collisionRenderer.centerY, collisionRenderer.centerZ);
 
-			ImGui::Text("Collision scale: %.6f", collisionRenderer.scale);
+			ImGui::Text("Collision scale: %.4f", collisionRenderer.scale);
 		}
 
 		if (textures.size() > 0)
@@ -235,6 +259,8 @@ int main()
 				ImGui::Image(texPackets[i].image, ImVec2(texPackets[i].width * 1.5f, texPackets[i].height * 1.5f));
 			}
 		}
+
+		ImGui::End();
 
 		ImGui::Render();
 
