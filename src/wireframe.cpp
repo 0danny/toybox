@@ -320,7 +320,7 @@ namespace Wireframe
 
 						// Internal diagonal, equivalent to entv.html's grey line.
 						// You can remove this if you only want the outer outline.
-						pushLine(vertices, p3, p2, meshOffset);
+						//pushLine(vertices, p3, p2, meshOffset);
 					}
 				}
 			}

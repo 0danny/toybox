@@ -1,100 +1,104 @@
+#include "Parsers/BinaryReader.hpp"
 #include "Parsers/GeomParser.hpp"
 #include "Parsers/NGNParser.hpp"
 #include "Parsers/TextureParser.hpp"
 
-#include <chrono>
+#include "Clock.hpp"
+
+#include <iostream>
 #include <print>
 #include <cstdlib>
 
-#include <GLFW/glfw3.h>
-
 namespace GeomParser
 {
-	const std::streamsize readUInt32 = 4;
-	const std::streamsize readUInt16 = 2;
-	const std::streamsize readUInt8 = 1;
-
 	std::vector<NGNParser::Shape> Shapes;
 
 	std::vector<NGNParser::Shape> returnShapes()
-	{
-		return Shapes;
-	}
+	{ return Shapes; }
 
 	std::string getShapeName(std::ifstream& file)
 	{
-		uint32_t subBlock;
-		file.read(reinterpret_cast<char*>(&subBlock), readUInt32);
+		BinaryReader binaryReader(file);
+
+		uint32_t subBlock = binaryReader.readU32();
+
 		if (subBlock != uint32_t(64))
 		{
-			std::println("SUBBLOCK MISALIGNED");
+			std::println("SHAPENAME SUBBLOCK MISALIGNED");
 			exit(EXIT_FAILURE);
 		}
+
 		file.seekg(4, std::ios::cur); // skips subBlockLength
-		uint8_t shapeNameByteCount;
-		file.read(reinterpret_cast<char*>(&shapeNameByteCount), readUInt8);
-		std::string shapeName(shapeNameByteCount, '\0');
-		file.read(&shapeName[0], shapeNameByteCount);
+
+		uint8_t shapeNameByteCount = binaryReader.readU8();
+
+		std::string shapeName = binaryReader.readStr(shapeNameByteCount);
+
 		return shapeName;
 	}
 
 	std::vector<std::string> getTextureNames(std::ifstream& file)
 	{
-		uint32_t subBlock;
-		file.read(reinterpret_cast<char*>(&subBlock), readUInt32);
+		BinaryReader binaryReader(file);
+
+		uint32_t subBlock = binaryReader.readU32();
+
 		if (subBlock != uint32_t(65))
 		{
-			std::println("SUBBLOCK MISALIGNED");
+			std::println("TEX SUBBLOCK MISALIGNED");
 			exit(EXIT_FAILURE);
 		}
+
 		std::vector<std::string> textureNames;
-		uint32_t subBlockLength;
-		file.read(reinterpret_cast<char*>(&subBlockLength), readUInt32);
+		uint32_t subBlockLength = binaryReader.readU32();
+
 		std::streampos offset = file.tellg();
-		uint16_t textureCount;
-		file.read(reinterpret_cast<char*>(&textureCount), readUInt16);
+		uint16_t textureCount = binaryReader.readU16();
+
 		textureNames.resize(textureCount);
 
 		file.seekg(4, std::ios::cur); // skips unknownBytes
 		for (uint16_t i = 0; i < textureCount; i++)
 		{
-			uint8_t texNameByteCount;
-			file.read(reinterpret_cast<char*>(&texNameByteCount), readUInt8);
-			std::string texName(texNameByteCount, '\0');
-			file.read(&texName[0], texNameByteCount);
+			uint8_t texNameByteCount = binaryReader.readU8();
+			std::string texName = binaryReader.readStr(texNameByteCount);
 			textureNames[i] = texName;
 		}
+
 		file.seekg(offset, std::ios::beg); // seek to offset
 		file.seekg(subBlockLength, std::ios::cur); // seek past subBlock (we do this to skip any amount of padding)
+
 		return textureNames;
 	}
 
 	std::vector<int> getMaterialIndexes(std::ifstream& file)
 	{
-		uint32_t subBlock;
-		file.read(reinterpret_cast<char*>(&subBlock), readUInt32);
+		BinaryReader binaryReader(file);
+
+		uint32_t subBlock = binaryReader.readU32();
+
 		if (subBlock != uint32_t(66))
 		{
-			std::println("SUBBLOCK MISALIGNED");
+			std::println("MAT SUBBLOCK MISALIGNED");
 			exit(EXIT_FAILURE);
 		}
-		std::vector<int> materialIndexes;
+
 		file.seekg(4, std::ios::cur); // skips subBlockLength
-		uint32_t materialCount;
-		file.read(reinterpret_cast<char*>(&materialCount), readUInt32);
-		materialIndexes.resize(materialCount);
+		uint32_t materialCount = binaryReader.readU32();
+		std::vector<int> materialIndexes(materialCount);
 
 		for (uint32_t i = 0; i < materialCount; i++)
 		{
 			file.seekg(4, std::ios::cur); // skips materialId
-			uint32_t materialSize;
-			file.read(reinterpret_cast<char*>(&materialSize), readUInt32);
-			file.seekg(3, std::ios::cur); // skips materialRGB
+			uint32_t materialSize = binaryReader.readU32();
+
 			if (materialSize == uint32_t(9))
-				file.seekg(4, std::ios::cur); // skips materialId if size = 9
-			uint16_t textureIndex;
-			file.read(reinterpret_cast<char*>(&textureIndex), readUInt16);
-			if (textureIndex == uint16_t(65536))
+				file.seekg(4, std::ios::cur); // skips materialId again if size = 9
+
+			file.seekg(3, std::ios::cur); // skips materialRGB
+			uint16_t textureIndex = binaryReader.readU16();
+
+			if (textureIndex == uint16_t(65536)) // no material if = 65536
 				materialIndexes[i] = textureIndex;
 			else
 				materialIndexes[i] = -1;
@@ -105,61 +109,63 @@ namespace GeomParser
 
 	std::vector<NGNParser::Vertex> getRawVertexData(std::ifstream& file)
 	{
-		uint32_t subBlock;
-		file.read(reinterpret_cast<char*>(&subBlock), readUInt32);
+		BinaryReader binaryReader(file);
+
+		uint32_t subBlock = binaryReader.readU32();
+
 		if (subBlock != uint32_t(67))
 		{
-			std::println("SUBBLOCK MISALIGNED");
+			std::println("VERT SUBBLOCK MISALIGNED");
 			exit(EXIT_FAILURE);
 		}
-		std::vector<NGNParser::Vertex> rawVertexData;
+
 		file.seekg(12, std::ios::cur); // skips subBlockLength, v17 and vertexDataLength
-		uint32_t vertexCount;
-		file.read(reinterpret_cast<char*>(&vertexCount), readUInt32);
-		rawVertexData.resize(vertexCount);
+
+		uint32_t vertexCount = binaryReader.readU32();
+		std::vector<NGNParser::Vertex> rawVertexData(vertexCount);
+
 		for (uint32_t i = 0; i < vertexCount; i++)
 		{
 			NGNParser::Vertex currentVertex = rawVertexData[i];
-			file.read(reinterpret_cast<char*>(&currentVertex.x), readUInt32);
-			file.read(reinterpret_cast<char*>(&currentVertex.y), readUInt32);
-			file.read(reinterpret_cast<char*>(&currentVertex.z), readUInt32);
-			file.read(reinterpret_cast<char*>(&currentVertex.nx), readUInt32);
-			file.read(reinterpret_cast<char*>(&currentVertex.ny), readUInt32);
-			file.read(reinterpret_cast<char*>(&currentVertex.nz), readUInt32);
-			file.read(reinterpret_cast<char*>(&currentVertex.a), readUInt8);
-			file.read(reinterpret_cast<char*>(&currentVertex.r), readUInt8);
-			file.read(reinterpret_cast<char*>(&currentVertex.g), readUInt8);
-			file.read(reinterpret_cast<char*>(&currentVertex.b), readUInt8);
-			file.read(reinterpret_cast<char*>(&currentVertex.u), readUInt32);
-			file.read(reinterpret_cast<char*>(&currentVertex.v), readUInt32);
+			currentVertex.x = binaryReader.readU32();
+			currentVertex.y = binaryReader.readU32();
+			currentVertex.z = binaryReader.readU32();
+			currentVertex.nx = binaryReader.readU32();
+			currentVertex.nx = binaryReader.readU32();
+			currentVertex.nx = binaryReader.readU32();
+			currentVertex.a = binaryReader.readU8();
+			currentVertex.r = binaryReader.readU8();
+			currentVertex.g = binaryReader.readU8();
+			currentVertex.b = binaryReader.readU8();
+			currentVertex.u = binaryReader.readU32();
+			currentVertex.v = binaryReader.readU32();
 		}
 		return rawVertexData;
 	}
 
 	std::vector<NGNParser::Prim> getPrimitiveData(std::ifstream& file, NGNParser::Shape currentShape)
 	{
-		uint32_t subBlock;
-		file.read(reinterpret_cast<char*>(&subBlock), readUInt32);
+		BinaryReader binaryReader(file);
+
+		uint32_t subBlock = binaryReader.readU32();
+
 		if (subBlock != uint32_t(68))
 		{
-			std::println("SUBBLOCK MISALIGNED");
+			std::println("PRIM SUBBLOCK MISALIGNED");
 			exit(EXIT_FAILURE);
 		}
-		file.seekg(4, std::ios::cur); // skips subBlockLength
-		uint32_t primitiveCount;
-		file.read(reinterpret_cast<char*>(&primitiveCount), readUInt32);
 
-		std::vector<NGNParser::Prim> primitives;
-		primitives.resize(primitiveCount);
+		file.seekg(4, std::ios::cur); // skips subBlockLength
+		uint32_t primitiveCount = binaryReader.readU32();
+
+		std::vector<NGNParser::Prim> primitives(primitiveCount);
 
 		for (uint32_t i = 0; i < primitiveCount; i++)
 		{
 			NGNParser::Prim currentPrimitive = primitives[i];
 
-			uint32_t primitiveType;
-			file.read(reinterpret_cast<char*>(&primitiveType), readUInt32);
-			uint16_t materialIndex;
-			file.read(reinterpret_cast<char*>(&materialIndex), readUInt16);
+			uint32_t primitiveType = binaryReader.readU32();
+			uint16_t materialIndex = binaryReader.readU16();
 
 			if (currentShape.materialIndex[materialIndex] != -1)
 			{ // if a texture is to be found, link it to the prim, else set it to NULL
@@ -171,15 +177,13 @@ namespace GeomParser
 			else
 				currentPrimitive.textureId = NULL;
 
-			uint16_t vertexCount;
-			file.read(reinterpret_cast<char*>(&vertexCount), readUInt16);
+			uint16_t vertexCount = binaryReader.readU16();
 
 			std::vector<uint16_t> indices(vertexCount);
 
 			for (uint16_t n = 0; n < vertexCount; n++)
 			{
-				uint16_t vertexNum;
-				file.read(reinterpret_cast<char*>(&vertexNum), readUInt16);
+				uint16_t vertexNum = binaryReader.readU16();
 				indices[n] = vertexNum;
 			}
 
@@ -220,10 +224,11 @@ namespace GeomParser
 	{
 		if (LOD == false)
 		{
-			auto start_time = std::chrono::high_resolution_clock::now();
+			BinaryReader binaryReader(file);
 
-			uint32_t shapeCount;
-			file.read(reinterpret_cast<char*>(&shapeCount), readUInt32);
+			Timer timer;
+
+			uint32_t shapeCount = binaryReader.readU32();
 
 			Shapes.resize(shapeCount);
 
@@ -246,11 +251,10 @@ namespace GeomParser
 			}
 			std::println("~Shapes Indexed: {}", Shapes.size());
 
-			auto end_time = std::chrono::high_resolution_clock::now();
 			std::string txt = "";
 			if (LOD == true)
 				txt = " (LOD)";
-			std::println("~Took {}ms to parse geometry{}", std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count(), txt);
+			std::println("~Took {}ms to parse geometry{}", timer.returnTime(), txt);
 		}
 		else
 		{

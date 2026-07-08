@@ -1,33 +1,29 @@
+#include "Parsers/BinaryReader.hpp"
 #include "Parsers/TextureParser.hpp"
 
+#include "Clock.hpp"
+
 #include <fstream>
-#include <chrono>
 #include <print>
 
 #include <GLFW/glfw3.h>
 
 namespace TextureParser
 {
-	const std::streamsize readUInt32 = 4;
-	const std::streamsize readUInt8 = 1;
-
 	static std::vector<NGNParser::Texture> textures;
 
 	std::vector<NGNParser::Texture> ReturnImages()
-	{
-		return textures;
-	}
+	{ return textures; }
 
 	void ReadTextureBlock(std::ifstream& file)
 	{
-		auto start_time = std::chrono::high_resolution_clock::now();
+		BinaryReader binaryReader(file);
+
+		Timer timer;
 
 		textures.clear();
-		auto start = std::chrono::high_resolution_clock::now();
 
-		uint32_t textureCount;
-
-		file.read(reinterpret_cast<char*>(&textureCount), readUInt32);
+		uint32_t textureCount = binaryReader.readU32();
 
 		textures.resize(textureCount);
 
@@ -37,18 +33,13 @@ namespace TextureParser
 		for (uint32_t i = 0; i < textureCount; i++)
 		{
 			file.seekg(4, std::ios::cur); // Seek textureByteLength
-			uint32_t textureNameByteLength;
-			file.read(reinterpret_cast<char*>(&textureNameByteLength), readUInt32);
-			std::string textureName(textureNameByteLength, '\0');
-
-			file.read(&textureName[0], textureNameByteLength);
+			uint32_t textureNameByteLength = binaryReader.readU32();
+			std::string textureName = binaryReader.readStr(textureNameByteLength);
 
 			file.seekg(18, std::ios::cur); // Seek unnecessary bytes
 
-			uint32_t textureX;
-			file.read(reinterpret_cast<char*>(&textureX), readUInt32);
-			uint32_t textureY;
-			file.read(reinterpret_cast<char*>(&textureY), readUInt32);
+			uint32_t textureX = binaryReader.readU32();
+			uint32_t textureY = binaryReader.readU32();
 
 			file.seekg(28, std::ios::cur); // Seek unnecessary bytes
 
@@ -77,7 +68,6 @@ namespace TextureParser
 			textures[i].y = textureY;
 		}
 
-		auto end_time = std::chrono::high_resolution_clock::now();
-		std::println("~Extracted {} textures in {}ms", textures.size(), std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
+		std::println("~Extracted {} textures in {}ms", textures.size(), timer.returnTime());
 	}
 }

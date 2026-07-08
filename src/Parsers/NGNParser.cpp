@@ -1,27 +1,33 @@
+#include "Parsers/BinaryReader.hpp"
+#include "Clock.hpp"
+
 #include "Parsers/NGNParser.hpp"
 #include "Parsers/TextureParser.hpp"
 #include "Parsers/GeomParser.hpp"
 
 #include <print>
-#include <chrono>
 
 namespace NGNParser
 {
-	const std::streamsize readUInt32 = 4;
-	const std::streamsize readUInt8 = 1;
-
 	void ReadNGN(std::ifstream& file)
 	{
-		auto start_time = std::chrono::high_resolution_clock::now();
+		BinaryReader binaryReader(file);
+		Timer timer;
+
 		std::println("\n-- Parsing NGN... --");
 
 		uint32_t BlockNum, BlockSize = 0;
 		bool LOD = false;
-		while (file.read(reinterpret_cast<char*>(&BlockNum), readUInt32))
+
+		while (file)
 		{
-			if (! file.read(reinterpret_cast<char*>(&BlockSize), readUInt32))
+			BlockNum = binaryReader.readU32();
+			BlockSize = binaryReader.readU32();
+			if (! BlockSize)
 				break;
+
 			std::println("Block Number: {}", BlockNum);
+
 			if (BlockNum == 260)
 			{ // 260 = Textures
 				TextureParser::ReadTextureBlock(file);
@@ -35,16 +41,11 @@ namespace NGNParser
 					LOD = true;
 			}
 			else if (BlockNum == 0)
-			{
 				break;
-			}
 			else
-			{
 				file.seekg(BlockSize, std::ios::cur);
-			}
 		}
 
-		auto end_time = std::chrono::high_resolution_clock::now();
-		std::println("-- Took {}ms to parse NGN --\n", std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
+		std::println("-- Took {}ms to parse NGN --\n", timer.returnTime());
 	}
 }

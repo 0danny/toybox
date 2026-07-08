@@ -52,7 +52,7 @@ void openNGN()
 		NGNParser::ReadNGN(file);
 		textures = TextureParser::ReturnImages();
 
-		std::println("returned {} images", textures.size());
+		//std::println("returned {} images", textures.size());
 	}
 
 	return;

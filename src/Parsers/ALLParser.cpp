@@ -1,8 +1,10 @@
+#include "BinaryReader.hpp"
 #include "Parsers/ALLParser.hpp"
+
+#include "Clock.hpp"
 
 #include <iostream>
 #include <print>
-#include <chrono>
 
 namespace ALLParser
 {
@@ -13,116 +15,6 @@ namespace ALLParser
 	// 0x09    target position data
 	// 0x0101  infinite wall collision
 	// 0x0104  collision footer
-
-	const std::streamsize readUInt32 = 4;
-	const std::streamsize readInt32 = 4;
-	const std::streamsize readUInt16 = 2;
-	const std::streamsize readInt16 = 2;
-	const std::streamsize readUInt8 = 1;
-
-	size_t getFileSize(std::ifstream& file)
-	{
-		std::streampos oldPos = file.tellg();
-
-		file.seekg(0, std::ios::end);
-		std::streampos endPos = file.tellg();
-
-		file.seekg(oldPos, std::ios::beg);
-
-		if (endPos < 0)
-			throw std::runtime_error("file size NULL");
-
-		return static_cast<size_t>(endPos);
-	}
-
-	void requireRange(size_t fileSize, size_t off, size_t len)
-	{
-		if (off + len < off || off + len > fileSize)
-			throw std::runtime_error("EOF");
-	}
-
-	void seekTo(std::ifstream& file, size_t off, size_t fileSize)
-	{
-		requireRange(fileSize, off, 0);
-		file.seekg(static_cast<std::streamoff>(off), std::ios::beg);
-
-		if (! file)
-			throw std::runtime_error("seek no work");
-	}
-
-	template <typename T>
-	T readValue(std::ifstream& file, std::streamsize bytes)
-	{
-		T value {};
-		file.read(reinterpret_cast<char*>(&value), bytes);
-
-		if (! file)
-			throw std::runtime_error("read no work");
-
-		return value;
-	}
-
-	// FILE READ HELPERS FOR COMMON TYPES
-
-	uint8_t readU8(std::ifstream& file)
-	{
-		return readValue<uint8_t>(file, readUInt8);
-	}
-
-	int16_t readS16(std::ifstream& file)
-	{
-		return readValue<int16_t>(file, readInt16);
-	}
-
-	uint32_t readU32(std::ifstream& file)
-	{
-		return readValue<uint32_t>(file, readUInt32);
-	}
-
-	int32_t readS32(std::ifstream& file)
-	{
-		return readValue<int32_t>(file, readInt32);
-	}
-
-	uint8_t readU8At(std::ifstream& file, size_t off, size_t fileSize)
-	{
-		requireRange(fileSize, off, sizeof(uint8_t));
-		seekTo(file, off, fileSize);
-		return readU8(file);
-	}
-
-	int16_t readS16At(std::ifstream& file, size_t off, size_t fileSize)
-	{
-		requireRange(fileSize, off, sizeof(int16_t));
-		seekTo(file, off, fileSize);
-		return readS16(file);
-	}
-
-	uint32_t readU32At(std::ifstream& file, size_t off, size_t fileSize)
-	{
-		requireRange(fileSize, off, sizeof(uint32_t));
-		seekTo(file, off, fileSize);
-		return readU32(file);
-	}
-
-	int32_t readS32At(std::ifstream& file, size_t off, size_t fileSize)
-	{
-		requireRange(fileSize, off, sizeof(int32_t));
-		seekTo(file, off, fileSize);
-		return readS32(file);
-	}
-
-	Vector3S readVec3sAt(std::ifstream& file, size_t off, size_t fileSize)
-	{
-		return Vector3S { readS16At(file, off + 0, fileSize), readS16At(file, off + 2, fileSize), readS16At(file, off + 4, fileSize) };
-	}
-
-	Vector3S addVec3s(Vector3S a, Vector3S b)
-	{
-		return Vector3S { static_cast<int16_t>(a.x + b.x), static_cast<int16_t>(a.y + b.y), static_cast<int16_t>(a.z + b.z) };
-	}
-
-	// END OF HELPERS
 
 	DataGroup decodeGroupType(uint32_t type)
 	{
@@ -169,6 +61,7 @@ namespace ALLParser
 
 	GFXMesh parseGFX(std::ifstream& file, const DataGroupHeader& header, size_t fileSize)
 	{
+		BinaryReader binaryReader(file);
 		GFXMesh mesh;
 		mesh.header = header;
 
@@ -177,14 +70,14 @@ namespace ALLParser
 
 		while (pos + 4 <= fileSize && pos + 4 <= payloadEnd)
 		{
-			uint8_t flagPeek = readU8At(file, pos + 3, fileSize);
+			uint8_t flagPeek = binaryReader.readU8At(pos + 3, fileSize);
 
 			if ((flagPeek & 0xF0) != 0x30)
 				break;
 
-			RGBu8 firstColour { readU8At(file, pos + 0, fileSize), readU8At(file, pos + 1, fileSize), readU8At(file, pos + 2, fileSize) };
+			RGBu8 firstColour { binaryReader.readU8At(pos + 0, fileSize), binaryReader.readU8At(pos + 1, fileSize), binaryReader.readU8At(pos + 2, fileSize) };
 
-			uint8_t flag = readU8At(file, pos + 3, fileSize);
+			uint8_t flag = binaryReader.readU8At(pos + 3, fileSize);
 			pos += 4; // seek
 
 			int vertexCount = (flag & 0x08) ? 4 : 3;
@@ -200,10 +93,10 @@ namespace ALLParser
 			// The JS uses unshift(), so it reverses vertex order as it reads.
 			for (int i = 0; i < vertexCount; i++)
 			{
-				Vector3S p = readVec3sAt(file, pos, fileSize);
+				Vector3S p = binaryReader.readVec3sAt(pos, fileSize);
 				pos += 6;
 
-				Vector2u8 uv { readU8At(file, pos + 0, fileSize), readU8At(file, pos + 1, fileSize) };
+				Vector2u8 uv { binaryReader.readU8At(pos + 0, fileSize), binaryReader.readU8At(pos + 1, fileSize) };
 				pos += 2;
 
 				positions.insert(positions.begin(), p);
@@ -217,9 +110,9 @@ namespace ALLParser
 
 			for (int i = 1; i < vertexCount; i++)
 			{
-				RGBu8 c { readU8At(file, pos + 0, fileSize), readU8At(file, pos + 1, fileSize), readU8At(file, pos + 2, fileSize) };
+				RGBu8 c { binaryReader.readU8At(pos + 0, fileSize), binaryReader.readU8At(pos + 1, fileSize), binaryReader.readU8At(pos + 2, fileSize) };
 
-				uint8_t fourthByte = readU8At(file, pos + 3, fileSize);
+				uint8_t fourthByte = binaryReader.readU8At(pos + 3, fileSize);
 				pos += 4;
 
 				texPageByte = fourthByte;
@@ -259,7 +152,7 @@ namespace ALLParser
 		}
 
 		// HTML checks for uint32 == 2 after primitive stream as an LOD marker.
-		if (pos + 4 <= fileSize && readU32At(file, pos, fileSize) == 2)
+		if (pos + 4 <= fileSize && binaryReader.readU32At(pos, fileSize) == 2)
 		{
 			mesh.LOD = true;
 			mesh.lodOffset = static_cast<uint32_t>(pos);
@@ -270,37 +163,41 @@ namespace ALLParser
 
 	CollisionPoly parseCollisionPoly(std::ifstream& file, size_t off, size_t fileSize)
 	{
+		BinaryReader binaryReader(file);
 		CollisionPoly p;
 
-		p.activeArea = {
-			readS16At(file, off + 0, fileSize), readS16At(file, off + 2, fileSize), readS16At(file, off + 4, fileSize), readS16At(file, off + 6, fileSize)
-		};
+		p.activeArea = { binaryReader.readS16At(off + 0, fileSize),
+			binaryReader.readS16At(off + 2, fileSize),
+			binaryReader.readS16At(off + 4, fileSize),
+			binaryReader.readS16At(off + 6, fileSize) };
 
-		p.origin = Vector3S { readS16At(file, off + 8, fileSize), readS16At(file, off + 10, fileSize), readS16At(file, off + 12, fileSize) };
+		p.origin =
+			Vector3S { binaryReader.readS16At(off + 8, fileSize), binaryReader.readS16At(off + 10, fileSize), binaryReader.readS16At(off + 12, fileSize) };
 
-		Vector3S p2off { readS16At(file, off + 14, fileSize), readS16At(file, off + 16, fileSize), readS16At(file, off + 18, fileSize) };
+		Vector3S p2off { binaryReader.readS16At(off + 14, fileSize), binaryReader.readS16At(off + 16, fileSize), binaryReader.readS16At(off + 18, fileSize) };
 
-		Vector3S p3off { readS16At(file, off + 20, fileSize), readS16At(file, off + 22, fileSize), readS16At(file, off + 24, fileSize) };
+		Vector3S p3off { binaryReader.readS16At(off + 20, fileSize), binaryReader.readS16At(off + 22, fileSize), binaryReader.readS16At(off + 24, fileSize) };
 
-		Vector3S p4off { readS16At(file, off + 26, fileSize), readS16At(file, off + 28, fileSize), readS16At(file, off + 30, fileSize) };
+		Vector3S p4off { binaryReader.readS16At(off + 26, fileSize), binaryReader.readS16At(off + 28, fileSize), binaryReader.readS16At(off + 30, fileSize) };
 
-		p.p2 = addVec3s(p.origin, p2off);
-		p.p3 = addVec3s(p.origin, p3off);
-		p.p4 = addVec3s(p.origin, p4off);
+		p.p2 = binaryReader.addVec3s(p.origin, p2off);
+		p.p3 = binaryReader.addVec3s(p.origin, p3off);
+		p.p4 = binaryReader.addVec3s(p.origin, p4off);
 
-		p.inclination1 = { readS16At(file, off + 32, fileSize), readS16At(file, off + 36, fileSize) };
+		p.inclination1 = { binaryReader.readS16At(off + 32, fileSize), binaryReader.readS16At(off + 36, fileSize) };
 
-		p.bouncing1 = readS16At(file, off + 34, fileSize);
+		p.bouncing1 = binaryReader.readS16At(off + 34, fileSize);
 
-		p.inclination2 = { readS16At(file, off + 38, fileSize), readS16At(file, off + 42, fileSize) };
+		p.inclination2 = { binaryReader.readS16At(off + 38, fileSize), binaryReader.readS16At(off + 42, fileSize) };
 
-		p.bouncing2 = readS16At(file, off + 40, fileSize);
+		p.bouncing2 = binaryReader.readS16At(off + 40, fileSize);
 
 		return p;
 	}
 
 	CollisionMesh parseCollision(std::ifstream& file, const DataGroupHeader& header, size_t fileSize)
 	{
+		BinaryReader binaryReader(file);
 		CollisionMesh mesh;
 		mesh.header = header;
 		mesh.collisionType = header.collisionType;
@@ -311,7 +208,7 @@ namespace ALLParser
 		while (pos + 12 <= fileSize && pos + 12 <= payloadEnd)
 		{
 			CollisionBlock block;
-			block.enabled = readS16At(file, pos, fileSize);
+			block.enabled = binaryReader.readS16At(pos, fileSize);
 			pos += 2;
 
 			if (block.enabled != 1)
@@ -319,12 +216,12 @@ namespace ALLParser
 				break;
 			}
 
-			block.polyCount = readS16At(file, pos, fileSize);
+			block.polyCount = binaryReader.readS16At(pos, fileSize);
 			pos += 2;
 
 			for (int i = 0; i < 4; i++)
 			{
-				block.unk[i] = readS16At(file, pos, fileSize);
+				block.unk[i] = binaryReader.readS16At(pos, fileSize);
 				pos += 2;
 			}
 
@@ -379,21 +276,22 @@ namespace ALLParser
 
 	AllFile ReadALL(std::ifstream& file)
 	{
-		auto start_time = std::chrono::high_resolution_clock::now();
+		BinaryReader binaryReader(file);
+		Timer timer;
 
-		const size_t fileSize = getFileSize(file);
+		const size_t fileSize = binaryReader.getFileSize();
 
 		if (fileSize < 8)
 			throw std::runtime_error("too tiny to be an .all file");
 
 		AllFile all;
 
-		all.metadataOffset = readU32At(file, 0, fileSize) * 2;
+		all.metadataOffset = binaryReader.readU32At(0, fileSize) * 2;
 
 		if (all.metadataOffset + 4 > fileSize)
 			throw std::runtime_error("metadata offset is EOF");
 
-		all.dataGroupCount = readU32At(file, all.metadataOffset, fileSize);
+		all.dataGroupCount = binaryReader.readU32At(all.metadataOffset, fileSize);
 
 		size_t metadataEntryOffset = all.metadataOffset + 4;
 		size_t currentPayloadOffset = 4;
@@ -409,7 +307,7 @@ namespace ALLParser
 			DataGroupHeader h;
 			h.metadataOffset = static_cast<uint32_t>(metadataEntryOffset);
 
-			uint32_t sizeWords = readU32At(file, metadataEntryOffset + 0x00, fileSize);
+			uint32_t sizeWords = binaryReader.readU32At(metadataEntryOffset + 0x00, fileSize);
 			h.payloadSize = sizeWords * 2;
 
 			// The JS does:
@@ -423,15 +321,15 @@ namespace ALLParser
 				h.payloadOffset = static_cast<uint32_t>(lastPayloadOffset);
 			}
 
-			h.pos = Vector3I { readS32At(file, metadataEntryOffset + 0x04, fileSize),
-				readS32At(file, metadataEntryOffset + 0x08, fileSize),
-				readS32At(file, metadataEntryOffset + 0x0C, fileSize) };
+			h.pos = Vector3I { binaryReader.readS32At(metadataEntryOffset + 0x04, fileSize),
+				binaryReader.readS32At(metadataEntryOffset + 0x08, fileSize),
+				binaryReader.readS32At(metadataEntryOffset + 0x0C, fileSize) };
 
-			h.typeRaw = readU32At(file, metadataEntryOffset + 0x10, fileSize);
+			h.typeRaw = binaryReader.readU32At(metadataEntryOffset + 0x10, fileSize);
 			h.type = decodeGroupType(h.typeRaw);
 
-			h.collisionType = readU8At(file, metadataEntryOffset + 0x28, fileSize);
-			h.flags = readU8At(file, metadataEntryOffset + 0x29, fileSize);
+			h.collisionType = binaryReader.readU8At(metadataEntryOffset + 0x28, fileSize);
+			h.flags = binaryReader.readU8At(metadataEntryOffset + 0x29, fileSize);
 
 			all.dataGroups.push_back(h);
 
@@ -459,8 +357,6 @@ namespace ALLParser
 
 			metadataEntryOffset += 0x4C;
 		}
-
-		auto end_time = std::chrono::high_resolution_clock::now();
 
 		bool debug = true;
 		if (debug == true)
@@ -510,7 +406,7 @@ namespace ALLParser
 			}
 		}
 
-		std::println("~Took {}ms to parse .all file", std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
+		std::println("~Took {}ms to parse .all file", timer.returnTime());
 		return all;
 	}
 }

@@ -8,6 +8,8 @@
 
 #include "Parsers/RAWParser.hpp"
 
+#include "Clock.hpp"
+
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
@@ -719,7 +721,7 @@ namespace RawParser
 
 	RawReadResult ReadRAW(const fs::path& inputFilePath)
 	{
-		auto start_time = std::chrono::high_resolution_clock::now();
+		Timer timer;
 		RawReadResult result;
 
 		if (inputFilePath.empty())
@@ -731,8 +733,7 @@ namespace RawParser
 
 		readRawFileToMemory(inputFilePath, result);
 
-		auto end_time = std::chrono::high_resolution_clock::now();
-		std::println("~Took {}ms to parse .raw file", std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
+		std::println("~Took {}ms to parse .raw file", timer.returnTime());
 		return result;
 	}
 }

@@ -43,6 +43,8 @@ add_executable(toybox
 
     src/main.cpp
 
+    src/Parsers/BinaryReader.hpp
+    src/Parsers/BinaryReader.cpp
     src/Parsers/TextureParser.cpp
     src/Parsers/GeomParser.cpp
     src/Parsers/NGNParser.cpp
@@ -53,6 +55,9 @@ add_executable(toybox
     src/FileUtils.hpp
     src/Globals.hpp
     src/Common.hpp
+
+    src/Clock.hpp
+    src/Clock.cpp
 
     src/Wireframe.hpp
     src/Wireframe.cpp
