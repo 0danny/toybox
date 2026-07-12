@@ -96,6 +96,9 @@ int32_t BinaryReader::readS32At(size_t off, size_t fileSize)
 	return readS32();
 }
 
+Vector3I BinaryReader::readVec3iAt(size_t off, size_t fileSize)
+{ return Vector3I { readS32At(off + 0, fileSize), readS32At(off + 4, fileSize), readS32At(off + 8, fileSize) }; }
+
 Vector3S BinaryReader::readVec3sAt(size_t off, size_t fileSize)
 { return Vector3S { readS16At(off + 0, fileSize), readS16At(off + 2, fileSize), readS16At(off + 4, fileSize) }; }
 

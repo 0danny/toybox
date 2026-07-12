@@ -12,6 +12,7 @@
 #include <optional>
 #include <array>
 
+#include "Parsers/DATParser.hpp"
 #include "Parsers/ALLParser.hpp"
 #include "Parsers/RAWParser.hpp"
 #include "Parsers/NGNParser.hpp"
@@ -126,6 +127,32 @@ void openALL()
 	return;
 }
 
+void openDAT()
+{
+	if (ImGui::Button("Open DAT"))
+	{
+		std::filesystem::path datPath = FileUtils::OpenFileDialog(L".dat");
+
+		if (datPath.empty())
+		{
+			std::println("No DAT file selected");
+			return;
+		}
+
+		std::ifstream file(datPath, std::ios::binary);
+
+		if (! file)
+		{
+			std::println("Failed to open DAT file");
+			return;
+		}
+
+		DATParser::DatFile dat = DATParser::readDat(file);
+	}
+
+	return;
+}
+
 int main()
 {
 	if (! glfwInit())
@@ -193,7 +220,7 @@ int main()
 			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
 
 			ImGui::TableNextColumn();
-			openLevel();
+			//openLevel();
 
 			ImGui::TableNextColumn();
 			openNGN();
@@ -201,6 +228,8 @@ int main()
 			openRAW();
 			ImGui::SameLine();
 			openALL();
+			ImGui::SameLine();
+			openDAT();
 
 			ImGui::EndTable();
 		}
@@ -243,7 +272,7 @@ int main()
 			{
 				ImGui::Text("%s - %dx%d", textures[i].name.c_str(), textures[i].x, textures[i].y);
 
-				ImGui::Image(textures[i].image, ImVec2(textures[i].x * 1.5f, textures[i].y * 1.5f));
+				ImGui::Image(textures[i].image, ImVec2(textures[i].x * 1.0f, textures[i].y * 1.0f));
 			}
 		}
 
@@ -256,7 +285,7 @@ int main()
 			{
 				ImGui::Text("tex%d - %dx%d", i, texPackets[i].width, texPackets[i].height);
 
-				ImGui::Image(texPackets[i].image, ImVec2(texPackets[i].width * 1.5f, texPackets[i].height * 1.5f));
+				ImGui::Image(texPackets[i].image, ImVec2(texPackets[i].width * 1.0f, texPackets[i].height * 1.0f));
 			}
 		}
 

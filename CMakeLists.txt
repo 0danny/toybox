@@ -43,6 +43,8 @@ add_executable(toybox
 
     src/main.cpp
 
+    src/Parsers/DATParser.hpp
+    src/Parsers/DATParser.cpp
     src/Parsers/BinaryReader.hpp
     src/Parsers/BinaryReader.cpp
     src/Parsers/TextureParser.cpp

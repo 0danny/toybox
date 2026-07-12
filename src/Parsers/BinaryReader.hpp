@@ -28,6 +28,8 @@ public:
 	uint32_t readU32At(size_t off, size_t fileSize);
 	int32_t readS32At(size_t off, size_t fileSize);
 
+	Vector3I readVec3iAt(size_t off, size_t fileSize);
+
 	Vector3S readVec3sAt(size_t off, size_t fileSize);
 	Vector3S addVec3s(Vector3S a, Vector3S b);
 
